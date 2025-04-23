@@ -46,7 +46,6 @@ public class LivePriceManager {
                 public void onMessage(String message) {
                     JSONObject json = new JSONObject(message);
                     if (!json.has("data")) return;
-                    System.out.println("[WS MESSAGE] " + json);
 
 
                     JSONArray dataArray = json.getJSONArray("data");
@@ -55,8 +54,6 @@ public class LivePriceManager {
                         String symbol = trade.getString("s");
                         double price = trade.getDouble("p");
 
-                        // First trade sets the base price
-                        basePrices.putIfAbsent(symbol, price);
                         double base = basePrices.get(symbol);
                         double change = ((price - base) / base) * 100.0;
 
