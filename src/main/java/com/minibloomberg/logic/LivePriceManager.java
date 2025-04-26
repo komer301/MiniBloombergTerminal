@@ -113,6 +113,11 @@ public class LivePriceManager {
         if (client != null && client.isOpen()) {
             client.send("{\"type\":\"unsubscribe\",\"symbol\":\"" + symbol + "\"}");
         }
+
+        watchlistPanel.removeTicker(symbol);
     }
-    
+
+    public boolean containsTicker(String symbol) {
+        return tickerData.containsKey(symbol);
+    }
 }

@@ -8,6 +8,7 @@ import com.minibloomberg.ui.TickerDetailPanel;
 import com.minibloomberg.ui.WatchlistPanel;
 
 public class MainWindow extends JFrame {
+    LivePriceManager livePriceManager;
 
     public MainWindow() {
         setTitle("Mini Bloomberg Terminal");
@@ -46,11 +47,7 @@ public class MainWindow extends JFrame {
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
 
-        LivePriceManager livePriceManager = new LivePriceManager(watchlistPanel);
-        String[] tickers = {"AAPL", "TSLA", "GOOGL", "MSFT", "NVDA"};
-        for (String symbol : tickers) {
-            livePriceManager.addTicker(symbol);
-        }
+        livePriceManager = new LivePriceManager(watchlistPanel);
         livePriceManager.connect();
 
         JPanel centerContainer = new JPanel(new BorderLayout());
@@ -58,7 +55,7 @@ public class MainWindow extends JFrame {
         add(centerContainer, BorderLayout.CENTER);
 
         TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
-        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL");
+        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL", livePriceManager);
         centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
 
         searchButton.addActionListener(e -> {
@@ -70,7 +67,7 @@ public class MainWindow extends JFrame {
                     showInvalidTickerPopup(centerContainer, tickerDetailPanelHolder);
                 } else {
                     centerContainer.remove(tickerDetailPanelHolder[0]);
-                    tickerDetailPanelHolder[0] = new TickerDetailPanel(storedTicker);
+                    tickerDetailPanelHolder[0] = new TickerDetailPanel(storedTicker, livePriceManager);
                     centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
                     centerContainer.revalidate();
                     centerContainer.repaint();
@@ -113,7 +110,7 @@ public class MainWindow extends JFrame {
 
         closeButton.addActionListener(e -> {
             dialog.dispose();
-            resetToDefault(centerContainer, tickerDetailPanelHolder);
+            resetToDefault(centerContainer, tickerDetailPanelHolder, livePriceManager);
         });
 
         JPanel buttonPanel = new JPanel();
@@ -127,16 +124,17 @@ public class MainWindow extends JFrame {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 dialog.dispose();
-                resetToDefault(centerContainer, tickerDetailPanelHolder);
+                resetToDefault(centerContainer, tickerDetailPanelHolder, livePriceManager);
             }
         });
 
         dialog.setVisible(true);
     }
 
-    private void resetToDefault(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
+    private void resetToDefault(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder,
+                                LivePriceManager livePriceManager) {
         centerContainer.remove(tickerDetailPanelHolder[0]);
-        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL"); // or whatever default
+        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL", livePriceManager);
         centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
         centerContainer.revalidate();
         centerContainer.repaint();

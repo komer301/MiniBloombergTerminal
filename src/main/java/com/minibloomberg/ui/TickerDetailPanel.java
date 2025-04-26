@@ -94,6 +94,7 @@
 
 package com.minibloomberg.ui;
 
+import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 
 import javax.swing.*;
@@ -111,7 +112,15 @@ public class TickerDetailPanel extends JPanel {
     private static final Color TEXT_LOSS = new Color(0xFF4D4D);
     private static final Color TEXT_PRIMARY = Color.YELLOW;
 
-    public TickerDetailPanel(String ticker) {
+    private final LivePriceManager livePriceManager;
+    private final String currentTicker;
+    private double previousClosePrice;
+    private JButton addToWatchlist;
+
+    public TickerDetailPanel(String ticker, LivePriceManager manager) {
+        this.livePriceManager = manager;
+        this.currentTicker = ticker;
+
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BG_DARK);
 
@@ -131,6 +140,8 @@ public class TickerDetailPanel extends JPanel {
             add(errorLabel);
             return;
         }
+
+        previousClosePrice = snapshot.previousClose;
 
         Color changeColor = snapshot.change >= 0 ? TEXT_GAIN : TEXT_LOSS;
 
@@ -187,7 +198,7 @@ public class TickerDetailPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
 
-        JButton addToWatchlist = new JButton("Add to Watchlist");
+        addToWatchlist = new JButton("Add to Watchlist");
         addToWatchlist.setPreferredSize(new Dimension(220, 45));
         addToWatchlist.setFont(new Font("Consolas", Font.BOLD, 14));
         addToWatchlist.setForeground(TEXT_PRIMARY);
@@ -195,6 +206,9 @@ public class TickerDetailPanel extends JPanel {
         addToWatchlist.setFocusPainted(false);
         addToWatchlist.setBorder(BorderFactory.createLineBorder(TEXT_PRIMARY));
         addToWatchlist.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        updateWatchlistButton();
+        addToWatchlist.addActionListener(e -> handleWatchlistButtonClick());
 
         buttonPanel.add(addToWatchlist);
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
@@ -207,5 +221,22 @@ public class TickerDetailPanel extends JPanel {
         label.setFont(TERMINAL_FONT);
         label.setForeground(color);
         return label;
+    }
+
+    private void updateWatchlistButton() {
+        if (livePriceManager.containsTicker(currentTicker)) {
+            addToWatchlist.setText("Remove from Watchlist");
+        } else {
+            addToWatchlist.setText("Add to Watchlist");
+        }
+    }
+
+    private void handleWatchlistButtonClick() {
+        if (livePriceManager.containsTicker(currentTicker)) {
+            livePriceManager.removeTicker(currentTicker);
+        } else {
+            livePriceManager.addTicker(currentTicker, previousClosePrice);
+        }
+        updateWatchlistButton();
     }
 }
