@@ -1,11 +1,7 @@
 package com.minibloomberg;
 
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-
 import javax.swing.*;
-
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 import com.minibloomberg.ui.TickerDetailPanel;
