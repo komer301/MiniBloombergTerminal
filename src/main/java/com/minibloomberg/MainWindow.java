@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import com.minibloomberg.logic.LivePriceManager;
+import com.minibloomberg.ui.TickerDetailPanel;
 import com.minibloomberg.ui.WatchlistPanel;
 
 public class MainWindow extends JFrame {
@@ -16,18 +17,19 @@ public class MainWindow extends JFrame {
     public MainWindow() {
         setTitle("Mini Bloomberg Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800);
+//        setSize(1200, 800);
+        setMinimumSize(new Dimension(1200, 750));
         setLayout(new BorderLayout());
 
         JPanel topPanel = new JPanel();
-        topPanel.setBackground(new Color(0x252525)); 
+        topPanel.setBackground(new Color(0x252525));
         topPanel.setPreferredSize(new Dimension(0, 60));
         add(topPanel, BorderLayout.NORTH);
 
         WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> {
             System.out.println("Clicked: " + ticker);
         });
-        watchlistPanel.setBackground(new Color(0x252525)); 
+        watchlistPanel.setBackground(new Color(0x252525));
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
 
@@ -38,12 +40,18 @@ public class MainWindow extends JFrame {
         }
         livePriceManager.connect(); 
 
-        JPanel centerPanel = new JPanel();
-        centerPanel.setBackground(new Color(0x121212));
-        add(centerPanel, BorderLayout.CENTER);
+//        JPanel centerPanel = new JPanel();
+//        centerPanel.setBackground(new Color(0x121212));
+//        add(centerPanel, BorderLayout.CENTER);
+
+        TickerDetailPanel tickerDetailPanel = new TickerDetailPanel();
+//        tickerDetailPanel.setBackground(new Color(0xCFCCCC));
+        tickerDetailPanel.setBackground(new Color(0xFFFFFF));
+        tickerDetailPanel.setPreferredSize(new Dimension(100, 0));
+        add(tickerDetailPanel, BorderLayout.CENTER);
 
         JPanel rightPanel = new JPanel();
-        rightPanel.setBackground(new Color(0x252525)); 
+        rightPanel.setBackground(new Color(0x252525));
         rightPanel.setPreferredSize(new Dimension(250, 0));
         add(rightPanel, BorderLayout.EAST);
 

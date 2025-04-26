@@ -30,7 +30,7 @@ public class LivePriceManager {
 
     public void connect() {
         Dotenv dotenv = Dotenv.load();
-        String apiKey = dotenv.get("WEBSOCKET_API_KEY");
+        String apiKey = dotenv.get("FINNHUB_API_KEY");
 
         try {
             client = new WebSocketClient(new URI("wss://ws.finnhub.io?token=" + apiKey)) {
