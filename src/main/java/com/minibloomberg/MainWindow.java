@@ -45,8 +45,8 @@ public class MainWindow extends JFrame {
 //        add(centerPanel, BorderLayout.CENTER);
 
         TickerDetailPanel tickerDetailPanel = new TickerDetailPanel();
-//        tickerDetailPanel.setBackground(new Color(0xCFCCCC));
-        tickerDetailPanel.setBackground(new Color(0xFFFFFF));
+        tickerDetailPanel.setBackground(new Color(0x000000));
+//        tickerDetailPanel.setBackground(new Color(0xFFFFFF));
         tickerDetailPanel.setPreferredSize(new Dimension(100, 0));
         add(tickerDetailPanel, BorderLayout.CENTER);
 
