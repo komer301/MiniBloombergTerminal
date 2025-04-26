@@ -1,14 +1,13 @@
 package com.minibloomberg;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
+import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import com.minibloomberg.logic.LivePriceManager;
+import com.minibloomberg.logic.Stock;
 import com.minibloomberg.ui.TickerDetailPanel;
 import com.minibloomberg.ui.WatchlistPanel;
 
@@ -17,18 +16,36 @@ public class MainWindow extends JFrame {
     public MainWindow() {
         setTitle("Mini Bloomberg Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        setSize(1200, 800);
-        setMinimumSize(new Dimension(1200, 750));
+        setMinimumSize(new Dimension(1200, 800));
         setLayout(new BorderLayout());
 
-        JPanel topPanel = new JPanel();
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         topPanel.setBackground(new Color(0x252525));
-        topPanel.setPreferredSize(new Dimension(0, 60));
+        topPanel.setPreferredSize(new Dimension(0, 80));
+
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(300, 35));
+        searchField.setFont(new Font("Consolas", Font.PLAIN, 16));
+        searchField.setBackground(new Color(0x1e1e1e));
+        searchField.setForeground(Color.YELLOW);
+        searchField.setCaretColor(Color.YELLOW);
+        searchField.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
+
+        JButton searchButton = new JButton("Search");
+        searchButton.setPreferredSize(new Dimension(50, 25));
+        searchButton.setForeground(Color.YELLOW);
+        searchButton.setBackground(new Color(0x1e1e1e));
+        searchButton.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
+        searchButton.setFont(new Font("Consolas", Font.BOLD, 14));
+        searchButton.setBorderPainted(false);
+        searchButton.setFocusPainted(false);
+        searchButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        topPanel.add(searchField);
+        topPanel.add(searchButton);
         add(topPanel, BorderLayout.NORTH);
 
-        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> {
-            System.out.println("Clicked: " + ticker);
-        });
+        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> System.out.println("Clicked: " + ticker));
         watchlistPanel.setBackground(new Color(0x252525));
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
@@ -38,17 +55,34 @@ public class MainWindow extends JFrame {
         for (String symbol : tickers) {
             livePriceManager.addTicker(symbol);
         }
-        livePriceManager.connect(); 
+        livePriceManager.connect();
 
-//        JPanel centerPanel = new JPanel();
-//        centerPanel.setBackground(new Color(0x121212));
-//        add(centerPanel, BorderLayout.CENTER);
+        JPanel centerContainer = new JPanel(new BorderLayout());
+        centerContainer.setBackground(new Color(0x000000));
+        add(centerContainer, BorderLayout.CENTER);
 
-        TickerDetailPanel tickerDetailPanel = new TickerDetailPanel();
-        tickerDetailPanel.setBackground(new Color(0x000000));
-//        tickerDetailPanel.setBackground(new Color(0xFFFFFF));
-        tickerDetailPanel.setPreferredSize(new Dimension(100, 0));
-        add(tickerDetailPanel, BorderLayout.CENTER);
+        TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
+        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL");
+        centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
+
+        searchButton.addActionListener(e -> {
+            String storedTicker = searchField.getText().toUpperCase().trim();
+            if (!storedTicker.isEmpty()) {
+                Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(storedTicker);
+
+                if (snapshot == null) {
+                    showInvalidTickerPopup(centerContainer, tickerDetailPanelHolder);
+                } else {
+                    centerContainer.remove(tickerDetailPanelHolder[0]);
+                    tickerDetailPanelHolder[0] = new TickerDetailPanel(storedTicker);
+                    centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
+                    centerContainer.revalidate();
+                    centerContainer.repaint();
+                }
+            }
+        });
+
+        searchField.addActionListener(e -> searchButton.doClick());
 
         JPanel rightPanel = new JPanel();
         rightPanel.setBackground(new Color(0x252525));
@@ -60,7 +94,59 @@ public class MainWindow extends JFrame {
         setVisible(true);
     }
 
+    private void showInvalidTickerPopup(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
+        JDialog dialog = new JDialog(this, "Invalid Ticker", true);
+        dialog.setSize(400, 150);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+        dialog.getContentPane().setBackground(new Color(0x1e1e1e));
+
+        JLabel message = new JLabel("Enter a valid ticker to display data.", SwingConstants.CENTER);
+        message.setFont(new Font("Consolas", Font.BOLD, 16));
+        message.setForeground(Color.RED);
+        dialog.add(message, BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("Close");
+        closeButton.setForeground(Color.RED);
+        closeButton.setBackground(Color.BLACK);
+        closeButton.setFont(new Font("Consolas", Font.BOLD, 14));
+        closeButton.setBorderPainted(false);
+        closeButton.setContentAreaFilled(false);
+        closeButton.setFocusPainted(false);
+        closeButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        closeButton.addActionListener(e -> {
+            dialog.dispose();
+            resetToDefault(centerContainer, tickerDetailPanelHolder);
+        });
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setBackground(new Color(0x1e1e1e));
+        buttonPanel.add(closeButton);
+
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                dialog.dispose();
+                resetToDefault(centerContainer, tickerDetailPanelHolder);
+            }
+        });
+
+        dialog.setVisible(true);
+    }
+
+    private void resetToDefault(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
+        centerContainer.remove(tickerDetailPanelHolder[0]);
+        tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL"); // or whatever default
+        centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
+        centerContainer.revalidate();
+        centerContainer.repaint();
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new MainWindow());
+        SwingUtilities.invokeLater(MainWindow::new);
     }
 }

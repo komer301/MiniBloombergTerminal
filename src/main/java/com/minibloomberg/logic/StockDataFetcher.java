@@ -14,6 +14,13 @@ public class StockDataFetcher {
     private static final String quoteUrl = "https://finnhub.io/api/v1/quote";
     private static final String profileUrl = "https://finnhub.io/api/v1/stock/profile2";
 
+    private static double getSafeDouble(JSONObject json, String key) {
+        if (json.has(key) && !json.isNull(key)) {
+            return json.getDouble(key);
+        }
+        return Double.NaN; // or any default invalid value you want
+    }
+
     public static Stock fetchStockSnapshot(String ticker) {
         try {
             JSONObject quoteData = fetchJson(quoteUrl + "?symbol=" + ticker + "&token=" + apiKey);
@@ -25,12 +32,16 @@ public class StockDataFetcher {
             }
 
             String companyName = profileData.optString("name", "N/A");
-            double currentPrice = quoteData.getDouble("c");
-            double change = quoteData.getDouble("d");
-            double percentChange = quoteData.getDouble("dp");
-            double previousClose = quoteData.getDouble("pc");
-            double dayLow = quoteData.getDouble("l");
-            double dayHigh = quoteData.getDouble("h");
+            double currentPrice = getSafeDouble(quoteData, "c");
+            double change = getSafeDouble(quoteData, "d");
+            double percentChange = getSafeDouble(quoteData, "dp");
+            double previousClose = getSafeDouble(quoteData, "pc");
+            double dayHigh = getSafeDouble(quoteData, "h");
+            double dayLow = getSafeDouble(quoteData, "l");
+
+            if (Double.isNaN(currentPrice ) || currentPrice == 0.0) {
+                return null;
+            }
 
             return new Stock(
                     ticker,

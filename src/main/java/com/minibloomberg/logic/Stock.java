@@ -22,4 +22,3 @@ public class Stock {
         this.dayLow = dayLow;
     }
 }
-

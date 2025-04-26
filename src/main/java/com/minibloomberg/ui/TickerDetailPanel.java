@@ -111,11 +111,10 @@ public class TickerDetailPanel extends JPanel {
     private static final Color TEXT_LOSS = new Color(0xFF4D4D);
     private static final Color TEXT_PRIMARY = Color.YELLOW;
 
-    public TickerDetailPanel() {
+    public TickerDetailPanel(String ticker) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BG_DARK);
 
-        // Stock Info
         JPanel infoContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         infoContainer.setOpaque(false);
 
@@ -123,8 +122,15 @@ public class TickerDetailPanel extends JPanel {
         infoPanel.setBackground(BG_DARK);
         infoContainer.add(infoPanel);
 
-        Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot("TSLA");
-        assert snapshot != null;
+        Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(ticker);
+
+        if (snapshot == null) {
+            JLabel errorLabel = new JLabel("Enter a valid ticker to display data.");
+            errorLabel.setForeground(Color.RED);
+            errorLabel.setFont(new Font("Consolas", Font.BOLD, 16));
+            add(errorLabel);
+            return;
+        }
 
         Color changeColor = snapshot.change >= 0 ? TEXT_GAIN : TEXT_LOSS;
 
@@ -141,16 +147,11 @@ public class TickerDetailPanel extends JPanel {
         add(infoContainer);
         add(Box.createVerticalStrut(15));
 
-        // Chart
         JPanel chartContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         chartContainer.setOpaque(false);
 
         JPanel chartPanel = new JPanel();
         chartPanel.setBackground(Color.BLACK);
-//        chartPanel.setBorder(BorderFactory.createCompoundBorder(
-//                new LineBorder(TEXT_NEUTRAL, 2, true),
-//                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-//        ));
         chartPanel.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(Color.WHITE, 2, true),
                 BorderFactory.createEmptyBorder(20, 20, 20, 20)
@@ -158,7 +159,6 @@ public class TickerDetailPanel extends JPanel {
 
         chartContainer.add(chartPanel);
 
-        // Resize logic
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -182,10 +182,8 @@ public class TickerDetailPanel extends JPanel {
                 infoContainer.revalidate();
             }
         });
-
         add(chartContainer);
 
-        // Button
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
 
@@ -196,6 +194,7 @@ public class TickerDetailPanel extends JPanel {
         addToWatchlist.setBackground(BG_DARK);
         addToWatchlist.setFocusPainted(false);
         addToWatchlist.setBorder(BorderFactory.createLineBorder(TEXT_PRIMARY));
+        addToWatchlist.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         buttonPanel.add(addToWatchlist);
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
