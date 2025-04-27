@@ -84,7 +84,7 @@ public class NewsPanel extends JPanel {
         });
 
         autoScrollTimer = new Timer(scrollSpeedMs, e -> autoScrollStep());
-        refreshTimer = new Timer(refreshIntervalMs, e -> {System.out.println("refreshed");fetchNewsInBackground();});
+        refreshTimer = new Timer(refreshIntervalMs, e -> fetchNewsInBackground());
         refreshTimer.setRepeats(true);
         refreshTimer.start();
 
