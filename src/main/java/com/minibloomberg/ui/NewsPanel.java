@@ -43,6 +43,10 @@ public class NewsPanel extends JPanel {
     private final int scrollStepPx = 1;    // Pixels to scroll per step (smaller = smoother)
     private boolean isMouseOver = false;   // Tracks if mouse is hovering
 
+    private final Timer refreshTimer;
+    private final int refreshIntervalMs = 600_000; // refresh news every 10 minutes
+
+
     public NewsPanel() {
         setLayout(new BorderLayout());
         setBackground(new Color(0x252525));
@@ -80,6 +84,9 @@ public class NewsPanel extends JPanel {
         });
 
         autoScrollTimer = new Timer(scrollSpeedMs, e -> autoScrollStep());
+        refreshTimer = new Timer(refreshIntervalMs, e -> {System.out.println("refreshed");fetchNewsInBackground();});
+        refreshTimer.setRepeats(true);
+        refreshTimer.start();
 
         fetchNewsInBackground();
     }

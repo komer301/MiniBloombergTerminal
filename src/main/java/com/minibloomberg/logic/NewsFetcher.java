@@ -23,7 +23,7 @@ public class NewsFetcher {
             String apiKey = dotenv.get("FINNHUB_API_KEY");
 
             String baseUrl = "https://finnhub.io/api/v1/news";
-            String params = "category=general&limit=50&token=" + apiKey ;
+            String params = "category=general&token=" + apiKey ;
             String fullUrl = baseUrl + "?" + params;
 
             URL url = new URL(fullUrl);
