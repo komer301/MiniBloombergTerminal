@@ -1,7 +1,13 @@
+com/minibloomberg/ui/NewsPanel$1.class
+com/minibloomberg/data/NewsArticle.class
+com/minibloomberg/ui/NewsPanel.class
 com/minibloomberg/logic/LivePriceManager$1.class
+com/minibloomberg/ui/NewsPanel$2.class
+com/minibloomberg/logic/NewsFetcher.class
 com/minibloomberg/data/TradeData.class
 com/minibloomberg/ui/WatchlistPanel$1.class
 com/minibloomberg/MainWindow.class
 com/minibloomberg/data/WatchlistItem.class
 com/minibloomberg/ui/WatchlistPanel.class
 com/minibloomberg/logic/LivePriceManager.class
+com/minibloomberg/ui/NewsPanel$3.class
