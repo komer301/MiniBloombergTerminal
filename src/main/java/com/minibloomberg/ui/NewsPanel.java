@@ -170,7 +170,6 @@ public class NewsPanel extends JPanel {
         try {
             long ts = Long.parseLong(unixTime) * 1000L;
             java.util.Date date = new java.util.Date(ts);
-            // Example: "Apr 27, 3:07 PM"
             java.text.SimpleDateFormat display = new java.text.SimpleDateFormat("MMM d, h:mm a");
             return display.format(date);
         } catch (Exception e) {
