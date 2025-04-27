@@ -9,6 +9,8 @@ import com.minibloomberg.ui.WatchlistPanel;
 
 public class MainWindow extends JFrame {
     LivePriceManager livePriceManager;
+    private JPanel centerContainer;
+    private TickerDetailPanel[] tickerDetailPanelHolder;
 
     public MainWindow() {
         setTitle("Mini Bloomberg Terminal");
@@ -42,7 +44,9 @@ public class MainWindow extends JFrame {
         topPanel.add(searchButton);
         add(topPanel, BorderLayout.NORTH);
 
-        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> System.out.println("Clicked: " + ticker));
+//        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> System.out.println("Clicked: " + ticker));
+        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker ->
+                searchForTicker(ticker, centerContainer, tickerDetailPanelHolder));
         watchlistPanel.setBackground(new Color(0x252525));
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
@@ -50,29 +54,17 @@ public class MainWindow extends JFrame {
         livePriceManager = new LivePriceManager(watchlistPanel);
         livePriceManager.connect();
 
-        JPanel centerContainer = new JPanel(new BorderLayout());
+        centerContainer = new JPanel(new BorderLayout());
         centerContainer.setBackground(new Color(0x000000));
         add(centerContainer, BorderLayout.CENTER);
 
-        TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
+        tickerDetailPanelHolder = new TickerDetailPanel[1];
         tickerDetailPanelHolder[0] = new TickerDetailPanel("AAPL", livePriceManager);
         centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
 
         searchButton.addActionListener(e -> {
-            String storedTicker = searchField.getText().toUpperCase().trim();
-            if (!storedTicker.isEmpty()) {
-                Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(storedTicker);
-
-                if (snapshot == null) {
-                    showInvalidTickerPopup(centerContainer, tickerDetailPanelHolder);
-                } else {
-                    centerContainer.remove(tickerDetailPanelHolder[0]);
-                    tickerDetailPanelHolder[0] = new TickerDetailPanel(storedTicker, livePriceManager);
-                    centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
-                    centerContainer.revalidate();
-                    centerContainer.repaint();
-                }
-            }
+            String storedTicker = searchField.getText();
+            searchForTicker(storedTicker, centerContainer, tickerDetailPanelHolder);
         });
 
         searchField.addActionListener(e -> searchButton.doClick());
@@ -85,6 +77,23 @@ public class MainWindow extends JFrame {
         getContentPane().setBackground(new Color(0x1e1e1e)); 
 
         setVisible(true);
+    }
+
+    private void searchForTicker(String ticker, JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
+        ticker = ticker.toUpperCase().trim();
+        if (!ticker.isEmpty()) {
+            Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(ticker);
+
+            if (snapshot == null) {
+                showInvalidTickerPopup(centerContainer, tickerDetailPanelHolder);
+            } else {
+                centerContainer.remove(tickerDetailPanelHolder[0]);
+                tickerDetailPanelHolder[0] = new TickerDetailPanel(ticker, livePriceManager);
+                centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
+                centerContainer.revalidate();
+                centerContainer.repaint();
+            }
+        }
     }
 
     private void showInvalidTickerPopup(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {

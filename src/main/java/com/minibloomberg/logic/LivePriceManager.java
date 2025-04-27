@@ -95,17 +95,24 @@ public class LivePriceManager {
         
     }
 
-    public void addTicker(String symbol){
-        addTicker(symbol,1.00);
-    }
-    public void addTicker(String symbol, double previousClose) {
-        tickerData.putIfAbsent(symbol, new TradeData(0, 0));
-        basePrices.putIfAbsent(symbol, previousClose);
-        if (client != null && client.isOpen()) {
-            client.send("{\"type\":\"subscribe\",\"symbol\":\"" + symbol + "\"}");
+    public void addTicker(Stock stock) {
+        String symbol = stock.symbol;
+
+        if (!tickerData.containsKey(symbol)) {
+            double price = stock.currentPrice;
+            double percentChange = stock.percentChange;
+
+            tickerData.put(symbol, new TradeData(price, percentChange));
+            basePrices.put(symbol, stock.previousClose);
+
+            watchlistPanel.updateTicker(symbol, price, percentChange);
+
+            if (client != null && client.isOpen()) {
+                client.send("{\"type\":\"subscribe\",\"symbol\":\"" + symbol + "\"}");
+            }
         }
     }
-    
+
     public void removeTicker(String symbol) {
         tickerData.remove(symbol);
         basePrices.remove(symbol);
