@@ -43,12 +43,8 @@ public class MainWindow extends JFrame {
         centerPanel.setBackground(new Color(0x121212));
         add(centerPanel, BorderLayout.CENTER);
 
-        // JPanel rightPanel = new JPanel();
-        // rightPanel.setBackground(new Color(0x252525)); 
-        // rightPanel.setPreferredSize(new Dimension(250, 0));
-        // add(rightPanel, BorderLayout.EAST);
         NewsPanel newsPanel = new NewsPanel();
-        newsPanel.setPreferredSize(new Dimension(350, 0)); // wider for readability
+        newsPanel.setPreferredSize(new Dimension(350, 0));
         add(newsPanel, BorderLayout.EAST);
 
 
