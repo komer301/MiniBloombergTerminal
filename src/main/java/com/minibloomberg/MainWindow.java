@@ -79,9 +79,34 @@ public class MainWindow extends JFrame {
         setVisible(true);
     }
 
+//    private void searchForTicker(String ticker, JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
+//        ticker = ticker.toUpperCase().trim();
+//        if (!ticker.isEmpty()) {
+//            Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(ticker);
+//
+//            if (snapshot == null) {
+//                showInvalidTickerPopup(centerContainer, tickerDetailPanelHolder);
+//            } else {
+//                centerContainer.remove(tickerDetailPanelHolder[0]);
+//                tickerDetailPanelHolder[0] = new TickerDetailPanel(ticker, livePriceManager);
+//                centerContainer.add(tickerDetailPanelHolder[0], BorderLayout.CENTER);
+//                centerContainer.revalidate();
+//                centerContainer.repaint();
+//            }
+//        }
+//    }
+
     private void searchForTicker(String ticker, JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {
         ticker = ticker.toUpperCase().trim();
         if (!ticker.isEmpty()) {
+            String currentTicker = tickerDetailPanelHolder[0] != null ?
+                    tickerDetailPanelHolder[0].getCurrentTicker() : null;
+
+            if (ticker.equalsIgnoreCase(currentTicker)) {
+                showAlreadyViewingPopup(ticker);
+                return;
+            }
+
             Stock snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(ticker);
 
             if (snapshot == null) {
@@ -94,6 +119,30 @@ public class MainWindow extends JFrame {
                 centerContainer.repaint();
             }
         }
+    }
+
+    private void showAlreadyViewingPopup(String ticker) {
+        JWindow popup = new JWindow();
+        popup.setBackground(new Color(0, 0, 0, 0));
+
+        JLabel message = new JLabel("Already viewing " + ticker, SwingConstants.CENTER);
+        message.setOpaque(true);
+        message.setBackground(new Color(30, 30, 30));
+        message.setForeground(Color.YELLOW);
+        message.setFont(new Font("Consolas", Font.BOLD, 14));
+        message.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
+
+        popup.getContentPane().add(message);
+        popup.setSize(220, 40);
+
+        Point location = getLocationOnScreen();
+        popup.setLocation(location.x + (getWidth() - popup.getWidth()) / 2, location.y + 100);
+
+        popup.setVisible(true);
+
+        Timer timer = new Timer(1500, e -> popup.dispose());
+        timer.setRepeats(false);
+        timer.start();
     }
 
     private void showInvalidTickerPopup(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder) {

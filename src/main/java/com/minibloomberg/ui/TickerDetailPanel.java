@@ -6,12 +6,10 @@ import com.minibloomberg.logic.Stock;
 import com.minibloomberg.logic.StockDataFetcher;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
-import java.util.ArrayList;
 
 
 public class TickerDetailPanel extends JPanel {
@@ -95,8 +93,8 @@ public class TickerDetailPanel extends JPanel {
             button.setContentAreaFilled(true);
 
             button.addActionListener(e -> {
-                updateChartForRange(range);        // Existing behavior
-                updateActiveButton(button);         // New behavior
+                updateChartForRange(range);
+                updateActiveButton(button);
             });
 
             rangeButtonPanel.add(button);
@@ -163,6 +161,10 @@ public class TickerDetailPanel extends JPanel {
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
         add(buttonPanel);
+    }
+
+    public String getCurrentTicker() {
+        return snapshot != null ? snapshot.symbol : null;
     }
 
     private JLabel createStyledLabel(String label, String value, Color valueColor) {
