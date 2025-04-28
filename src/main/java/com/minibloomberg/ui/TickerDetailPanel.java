@@ -1,13 +1,18 @@
 package com.minibloomberg.ui;
 
+import com.minibloomberg.data.HistoricalData;
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
+import com.minibloomberg.logic.StockDataFetcher;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.List;
+import java.util.ArrayList;
+
 
 public class TickerDetailPanel extends JPanel {
 
@@ -23,10 +28,15 @@ public class TickerDetailPanel extends JPanel {
     private final Stock snapshot;
     private JButton addToWatchlist;
 
+    private ChartPanel chartPanel;
+    private final HistoricalData fullData;
+    private JButton activeRangeButton;
+
     public TickerDetailPanel(String ticker, LivePriceManager manager) {
         this.livePriceManager = manager;
         this.currentTicker = ticker;
         this.snapshot = com.minibloomberg.logic.StockDataFetcher.fetchStockSnapshot(ticker);
+        this.fullData =  StockDataFetcher.fetchHistoricalData(currentTicker);
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(BG_DARK);
@@ -48,15 +58,6 @@ public class TickerDetailPanel extends JPanel {
 
         Color changeColor = snapshot.change >= 0 ? TEXT_GAIN : TEXT_LOSS;
 
-//        infoPanel.add(createLabel("Symbol: " + snapshot.symbol, TEXT_PRIMARY));
-//        infoPanel.add(createLabel("Company: " + snapshot.companyName, TEXT_NEUTRAL));
-//        infoPanel.add(createLabel("Change: " + snapshot.change, changeColor));
-//        infoPanel.add(createLabel("Percent Change: " + snapshot.percentChange + "%", changeColor));
-//        infoPanel.add(createLabel("Previous Close: " + snapshot.previousClose, TEXT_NEUTRAL));
-//        infoPanel.add(createLabel("Current Price: " + snapshot.currentPrice, TEXT_NEUTRAL));
-//        infoPanel.add(createLabel("Day Low: " + snapshot.dayLow, TEXT_NEUTRAL));
-//        infoPanel.add(createLabel("Day High: " + snapshot.dayHigh, TEXT_NEUTRAL));
-
         infoPanel.add(createStyledLabel("Symbol:", snapshot.symbol, TEXT_PRIMARY));
         infoPanel.add(createStyledLabel("Company:", snapshot.companyName, TEXT_NEUTRAL));
         infoPanel.add(createStyledLabel("Change:", "$" + snapshot.change, changeColor));
@@ -66,8 +67,6 @@ public class TickerDetailPanel extends JPanel {
         infoPanel.add(createStyledLabel("Day Low:", "$" + snapshot.dayLow, TEXT_NEUTRAL));
         infoPanel.add(createStyledLabel("Day High:", "$" + snapshot.dayHigh, TEXT_NEUTRAL));
 
-
-
         infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         add(infoContainer);
         add(Box.createVerticalStrut(15));
@@ -75,13 +74,50 @@ public class TickerDetailPanel extends JPanel {
         JPanel chartContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         chartContainer.setOpaque(false);
 
-        JPanel chartPanel = new JPanel();
-        chartPanel.setBackground(Color.BLACK);
-        chartPanel.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(Color.WHITE, 2, true),
-                BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        chartContainer.add(chartPanel);
+        JPanel innerPanel = new JPanel();
+        innerPanel.setLayout(new BoxLayout(innerPanel, BoxLayout.Y_AXIS));
+        innerPanel.setOpaque(false);
+
+        JPanel rangeButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        rangeButtonPanel.setOpaque(false);
+
+        String[] ranges = {"1M", "3M", "6M", "1Y", "All"};
+        for (String range : ranges) {
+            JButton button = new JButton(range);
+            button.setFocusPainted(false);
+            button.setBackground(Color.BLACK);
+            button.setForeground(Color.YELLOW);
+            button.setFont(new Font("Consolas", Font.BOLD, 14));
+            button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            button.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
+
+            button.setOpaque(true);
+            button.setContentAreaFilled(true);
+
+            button.addActionListener(e -> {
+                updateChartForRange(range);        // Existing behavior
+                updateActiveButton(button);         // New behavior
+            });
+
+            rangeButtonPanel.add(button);
+
+            if (range.equals("All")) {
+                activeRangeButton = button;
+                highlightButton(activeRangeButton);
+            }
+        }
+
+        innerPanel.add(rangeButtonPanel);
+        innerPanel.add(Box.createVerticalStrut(10));
+
+        chartPanel = new ChartPanel();
+        chartPanel.setHistoricalData(fullData);
+        chartPanel.setPreferredSize(new Dimension(800, 400));
+        innerPanel.add(chartPanel);
+
+        chartContainer.add(innerPanel);
+
+        add(chartContainer);
 
         this.addComponentListener(new ComponentAdapter() {
             @Override
@@ -107,7 +143,6 @@ public class TickerDetailPanel extends JPanel {
                 infoContainer.revalidate();
             }
         });
-        add(chartContainer);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
@@ -129,14 +164,6 @@ public class TickerDetailPanel extends JPanel {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
         add(buttonPanel);
     }
-
-//    private JLabel createLabel(String text, Color color) {
-//        JLabel label = new JLabel(text);
-//        label.setFont(TERMINAL_FONT);
-//        label.setForeground(color);
-////        label.setHorizontalAlignment(SwingConstants.CENTER);
-//        return label;
-//    }
 
     private JLabel createStyledLabel(String label, String value, Color valueColor) {
         String labelHtml = String.format(
@@ -169,5 +196,45 @@ public class TickerDetailPanel extends JPanel {
             livePriceManager.addTicker(snapshot);
         }
         updateWatchlistButton();
+    }
+
+    private void updateChartForRange(String selectedRange) {
+        if (fullData == null) return;
+
+        List<Long> timestamps = fullData.timestamps;
+        List<Double> closePrices = fullData.closePrices;
+
+        int daysBack = switch (selectedRange) {
+            case "1M" -> 21;
+            case "3M" -> 63;
+            case "6M" -> 126;
+            case "1Y" -> 252;
+            default -> Integer.MAX_VALUE;
+        };
+
+        int start = Math.max(0, timestamps.size() - daysBack);
+
+        List<Long> filteredTimestamps = timestamps.subList(start, timestamps.size());
+        List<Double> filteredPrices = closePrices.subList(start, closePrices.size());
+
+        chartPanel.setHistoricalData(new HistoricalData(filteredTimestamps, filteredPrices));
+    }
+
+    private void updateActiveButton(JButton newActive) {
+        if (activeRangeButton != null) {
+            resetButtonStyle(activeRangeButton);
+        }
+        activeRangeButton = newActive;
+        highlightButton(activeRangeButton);
+    }
+
+    private void highlightButton(JButton button) {
+        button.setBackground(Color.YELLOW);
+        button.setForeground(Color.BLACK);
+    }
+
+    private void resetButtonStyle(JButton button) {
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.YELLOW);
     }
 }

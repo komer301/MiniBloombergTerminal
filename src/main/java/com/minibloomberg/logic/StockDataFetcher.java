@@ -1,5 +1,6 @@
 package com.minibloomberg.logic;
 
+import com.minibloomberg.data.HistoricalData;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.json.JSONObject;
 
@@ -7,10 +8,15 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 public class StockDataFetcher {
     private static final Dotenv dotenv = Dotenv.load();
     private static final String apiKey = dotenv.get("FINNHUB_API_KEY");
+    private static final String alphaVantageApiKey = dotenv.get("ALPHA_VANTAGE_API_KEY");
     private static final String quoteUrl = "https://finnhub.io/api/v1/quote";
     private static final String profileUrl = "https://finnhub.io/api/v1/stock/profile2";
 
@@ -18,7 +24,7 @@ public class StockDataFetcher {
         if (json.has(key) && !json.isNull(key)) {
             return json.getDouble(key);
         }
-        return Double.NaN; // or any default invalid value you want
+        return Double.NaN;
     }
 
     public static Stock fetchStockSnapshot(String ticker) {
@@ -81,6 +87,54 @@ public class StockDataFetcher {
             in.close();
 
             return new JSONObject(response.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static HistoricalData fetchHistoricalData(String symbol) {
+        try {
+            String urlString = "https://www.alphavantage.co/query"
+                    + "?function=TIME_SERIES_DAILY"
+                    + "&symbol=" + symbol
+                    + "&outputsize=full"
+                    + "&apikey=" + alphaVantageApiKey;
+
+            JSONObject response = fetchJson(urlString);
+            if (response == null) {
+                System.err.println("Failed to fetch data for " + symbol);
+                return null;
+            }
+
+            JSONObject timeSeries = response.optJSONObject("Time Series (Daily)");
+            if (timeSeries == null) {
+                System.err.println("Invalid Alpha Vantage response for " + symbol);
+                return null;
+            }
+
+            List<Long> timestamps = new ArrayList<>();
+            List<Double> closePrices = new ArrayList<>();
+
+            List<String> dates = new ArrayList<>(timeSeries.keySet());
+            dates.sort(String::compareTo);
+
+            for (String date : dates) {
+                JSONObject dayData = timeSeries.getJSONObject(date);
+
+                double close = dayData.getDouble("4. close");
+
+                // Correct LocalDate -> Epoch Seconds (at UTC, midnight)
+                long epochTime = LocalDate.parse(date)
+                        .atStartOfDay(ZoneOffset.UTC)  // Use UTC instead of system default for consistency
+                        .toEpochSecond();
+
+                timestamps.add(epochTime);
+                closePrices.add(close);
+            }
+
+            return new HistoricalData(timestamps, closePrices);
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
