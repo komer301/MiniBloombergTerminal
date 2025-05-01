@@ -6,7 +6,6 @@ public class HistoricalData {
     public final List<Long> timestamps;
     public final List<Double> closePrices;
 
-    // New constructor
     public HistoricalData(List<Long> timestamps, List<Double> closePrices) {
         this.timestamps = timestamps;
         this.closePrices = closePrices;
