@@ -6,7 +6,6 @@ import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 import com.minibloomberg.ui.TickerDetailPanel;
 import com.minibloomberg.ui.WatchlistPanel;
-import org.jetbrains.annotations.NotNull;
 
 public class MainWindow extends JFrame {
     LivePriceManager livePriceManager;
@@ -16,8 +15,14 @@ public class MainWindow extends JFrame {
     public MainWindow() {
         setTitle("Mini Bloomberg Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1200, 800));
+        setMinimumSize(new Dimension(1200, 900));
         setLayout(new BorderLayout());
+
+        JPanel carouselPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        carouselPanel.setBackground(new Color(0x252525));
+        carouselPanel.setPreferredSize(new Dimension(0, 80));
+
+        add(carouselPanel, BorderLayout.NORTH);
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         topPanel.setBackground(new Color(0x252525));
@@ -71,7 +76,6 @@ public class MainWindow extends JFrame {
         setVisible(true);
     }
 
-    @NotNull
     private static JButton getjButton() {
         JButton searchButton = new JButton("Search");
         searchButton.setPreferredSize(new Dimension(50, 25));
@@ -162,7 +166,6 @@ public class MainWindow extends JFrame {
         dialog.setVisible(true);
     }
 
-    @NotNull
     private JPanel getjPanel(JPanel centerContainer, TickerDetailPanel[] tickerDetailPanelHolder, JDialog dialog) {
         JButton closeButton = new JButton("Close");
         closeButton.setForeground(Color.RED);
