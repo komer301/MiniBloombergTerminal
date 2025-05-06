@@ -36,7 +36,6 @@ public class LivePriceManager {
             client = new WebSocketClient(new URI("wss://ws.finnhub.io?token=" + apiKey)) {
                 @Override
                 public void onOpen(ServerHandshake handshake) {
-                    System.out.println("Connected to Finnhub");
                     for (String symbol : tickerData.keySet()) {
                         send("{\"type\":\"subscribe\",\"symbol\":\"" + symbol + "\"}");
                     }
@@ -91,7 +90,7 @@ public class LivePriceManager {
             if (client != null && client.isOpen()) {
                 client.send("ping");
             }
-        }, 30, 30, TimeUnit.SECONDS); 
+        }, 0, 30, TimeUnit.SECONDS); 
         
     }
 

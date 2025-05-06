@@ -5,6 +5,7 @@ import javax.swing.*;
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 import com.minibloomberg.ui.TickerDetailPanel;
+import com.minibloomberg.ui.NewsPanel;
 import com.minibloomberg.ui.WatchlistPanel;
 import org.jetbrains.annotations.NotNull;
 
@@ -61,10 +62,9 @@ public class MainWindow extends JFrame {
 
         searchField.addActionListener(e -> searchButton.doClick());
 
-        JPanel rightPanel = new JPanel();
-        rightPanel.setBackground(new Color(0x252525));
-        rightPanel.setPreferredSize(new Dimension(250, 0));
-        add(rightPanel, BorderLayout.EAST);
+        NewsPanel newsPanel = new NewsPanel();
+        newsPanel.setPreferredSize(new Dimension(350, 0));
+        add(newsPanel, BorderLayout.EAST);
 
         getContentPane().setBackground(new Color(0x1e1e1e)); 
 

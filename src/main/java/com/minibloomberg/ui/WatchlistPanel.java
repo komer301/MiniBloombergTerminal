@@ -1,10 +1,21 @@
 package com.minibloomberg.ui;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import javax.swing.*;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 
 public class WatchlistPanel extends JPanel {
     private final JPanel listPanel;
@@ -24,7 +35,6 @@ public class WatchlistPanel extends JPanel {
         setPreferredSize(new Dimension(150, 0));
         setBackground(BACKGROUND_COLOR);
 
-        // Top label
         JLabel title = new JLabel(" Watchlist");
         title.setFont(new Font("SansSerif", Font.BOLD, 16));
         title.setForeground(TEXT_COLOR);
@@ -34,7 +44,6 @@ public class WatchlistPanel extends JPanel {
         title.setHorizontalAlignment(SwingConstants.CENTER);
         add(title, BorderLayout.NORTH);
 
-        // Scrollable list panel
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(BACKGROUND_COLOR);
@@ -45,14 +54,7 @@ public class WatchlistPanel extends JPanel {
 //        placeholderLabel.setHorizontalAlignment(SwingConstants.CENTER);
 //        placeholderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 //        listPanel.add(placeholderLabel);
-
-        JScrollPane scrollPane = new JScrollPane(listPanel);
-        scrollPane.setBorder(null);
-        scrollPane.getViewport().setBackground(BACKGROUND_COLOR);
-        scrollPane.setBackground(BACKGROUND_COLOR);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(12);
-
-        add(scrollPane, BorderLayout.CENTER);
+        add(listPanel, BorderLayout.CENTER);
     }
 
     public void updateTicker(String ticker, double price, double changePercent) {
