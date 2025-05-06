@@ -3,6 +3,7 @@ package com.minibloomberg.logic;
 import com.minibloomberg.data.HistoricalData;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -17,10 +18,9 @@ import java.util.List;
 
 public class StockDataFetcher {
     private static final Dotenv dotenv = Dotenv.load();
-    private static final String apiKey = dotenv.get("FINNHUB_API_KEY");
+    private static final String finnhubApiKey = dotenv.get("FINNHUB_API_KEY");
     private static final String alphaVantageApiKey = dotenv.get("ALPHA_VANTAGE_API_KEY");
-    private static final String quoteUrl = "https://finnhub.io/api/v1/quote";
-    private static final String profileUrl = "https://finnhub.io/api/v1/stock/profile2";
+    private static final String finnhubUrl = "https://finnhub.io/api/v1/";
 
     @NotNull
     private static JSONObject getJsonObject(HttpURLConnection conn) throws IOException {
@@ -44,8 +44,8 @@ public class StockDataFetcher {
 
     public static Stock fetchStockSnapshot(String ticker) {
         try {
-            JSONObject quoteData = fetchJson(quoteUrl + "?symbol=" + ticker + "&token=" + apiKey);
-            JSONObject profileData = fetchJson(profileUrl + "?symbol=" + ticker + "&token=" + apiKey);
+            JSONObject quoteData = fetchJson(finnhubUrl + "quote?symbol=" + ticker + "&token=" + finnhubApiKey);
+            JSONObject profileData = fetchJson(finnhubUrl + "stock/profile2?symbol=" + ticker + "&token=" + finnhubApiKey);
 
             if (quoteData == null || profileData == null) {
                 System.err.println("Failed to fetch data for ticker: " + ticker);
@@ -75,9 +75,9 @@ public class StockDataFetcher {
                     dayLow
             );
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        } catch (JSONException e) {
+            System.err.println("Failed to fetch or parse stock data for ticker: " + ticker);
+            return new Stock(ticker, "Unavailable", 0, 0, 0, 0, 0, 0);
         }
     }
 
@@ -94,13 +94,13 @@ public class StockDataFetcher {
             }
 
             return getJsonObject(conn);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("IOException occurred while fetching URL: " + urlString);
+            System.err.println("Error message: " + e.getMessage());
             return null;
         }
     }
 
-//    AlphaVantage
     public static HistoricalData fetchHistoricalData(String symbol) {
         try {
             String urlString = "https://www.alphavantage.co/query"
@@ -115,7 +115,6 @@ public class StockDataFetcher {
                 return null;
             }
 
-            System.out.println(response.toString(2));
             JSONObject timeSeries = response.optJSONObject("Time Series (Daily)");
             if (timeSeries == null) {
                 System.err.println("Invalid Alpha Vantage response for " + symbol);
@@ -144,51 +143,8 @@ public class StockDataFetcher {
             return new HistoricalData(timestamps, closePrices);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.printf("Failed to fetch or parse historical data for %s: %s%n", symbol, e.getMessage());
             return null;
         }
     }
-
-//    Test graph
-//    public static HistoricalData fetchHistoricalData(String symbol) {
-//        try {
-//            InputStream inputStream = StockDataFetcher.class.getClassLoader().getResourceAsStream("mock_data.json");
-//            if (inputStream == null) {
-//                throw new FileNotFoundException("mock_data.json not found in resources!");
-//            }
-//            String response = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-//
-//            JSONObject responseJson = new JSONObject(response);
-//
-//            JSONObject timeSeries = responseJson.optJSONObject("Time Series (Daily)");
-//            if (timeSeries == null) {
-//                System.err.println("Invalid mock data response for " + symbol);
-//                return null;
-//            }
-//
-//            List<Long> timestamps = new ArrayList<>();
-//            List<Double> closePrices = new ArrayList<>();
-//
-//            List<String> dates = new ArrayList<>(timeSeries.keySet());
-//            dates.sort(String::compareTo);
-//
-//            for (String date : dates) {
-//                JSONObject dayData = timeSeries.getJSONObject(date);
-//                double close = dayData.getDouble("4. close");
-//
-//                long epochTime = java.time.LocalDate.parse(date)
-//                        .atStartOfDay(java.time.ZoneId.systemDefault())
-//                        .toEpochSecond();
-//
-//                timestamps.add(epochTime);
-//                closePrices.add(close);
-//            }
-//
-//            return new HistoricalData(timestamps, closePrices);
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
 }
