@@ -64,10 +64,7 @@ public class ChartPanel extends JPanel {
         int n = prices.size();
 
         // Draw Y-axis price labels
-        int targetLabels = Math.max(4, height / 100);
         double priceRange = maxPrice - minPrice;
-        double rawInterval = priceRange / (targetLabels - 1);
-//        double interval = roundToNiceNumber(rawInterval);
         double interval = roundToNiceNumber(priceRange, height);
 
         double niceMin = Math.floor(minPrice / interval) * interval;
@@ -107,24 +104,42 @@ public class ChartPanel extends JPanel {
         g2d.setColor(Color.YELLOW);
         g2d.setFont(new Font("Consolas", Font.BOLD, 12));
 
+        LocalDate start = Instant.ofEpochSecond(timestamps.get(0)).atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = Instant.ofEpochSecond(timestamps.get(timestamps.size() - 1)).atZone(ZoneId.systemDefault()).toLocalDate();
+        int totalYears = end.getYear() - start.getYear();
+
         LocalDate lastLabeled = null;
-        for (int i = 0; i < n; i++) {
-            int x = margin + i * (width - 2 * margin) / (n - 1);
+        if (totalYears < 2) {
+            // Show month labels
+            for (int i = 0; i < n; i++) {
+                int x = margin + i * (width - 2 * margin) / (n - 1);
+                LocalDate date = Instant.ofEpochSecond(timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
 
-            LocalDate date = Instant.ofEpochSecond(timestamps.get(i))
-                    .atZone(ZoneId.systemDefault()).toLocalDate();
+                boolean isNearStart = date.getDayOfMonth() <= 5;
+                boolean isNearEnd = date.getDayOfMonth() >= date.lengthOfMonth() - 5;
 
-            boolean isNearStart = date.getDayOfMonth() <= 5;
-            boolean isNearEnd = date.getDayOfMonth() >= date.lengthOfMonth() - 5;
+                if ((lastLabeled == null || !sameMonthYear(date, lastLabeled)) && !isNearStart && !isNearEnd) {
+                    String monthLabel = date.format(DateTimeFormatter.ofPattern("MMM"));
+                    g2d.drawString(monthLabel, x - 10, height - margin / 3);
+                    lastLabeled = date;
+                }
+            }
+        } else {
+            // Show dynamic year labels
+            int labelInterval = (totalYears >= 20) ? 5 : (totalYears >= 10) ? 2 : 1;
 
-            if ((lastLabeled == null || !sameMonthYear(date, lastLabeled)) && !isNearStart && !isNearEnd) {
-                String monthLabel = date.format(DateTimeFormatter.ofPattern("MMM"));
-                g2d.drawString(monthLabel, x - 10, height - margin / 3);
-                lastLabeled = date;
+            for (int i = 0; i < n; i++) {
+                int x = margin + i * (width - 2 * margin) / (n - 1);
+                LocalDate date = Instant.ofEpochSecond(timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
+
+                if (lastLabeled == null || date.getYear() >= lastLabeled.getYear() + labelInterval) {
+                    g2d.drawString(String.valueOf(date.getYear()), x - 10, height - margin / 3);
+                    lastLabeled = date;
+                }
             }
         }
 
-        // Draw hover crosshair if mouse is on grid
+        // Draw hover cross-hair if mouse is on grid
         if (hoverX != null) {
             g2d.setColor(Color.GRAY);
             g2d.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
@@ -173,19 +188,6 @@ public class ChartPanel extends JPanel {
     private boolean sameMonthYear(LocalDate d1, LocalDate d2) {
         return d1.getMonthValue() == d2.getMonthValue() && d1.getYear() == d2.getYear();
     }
-
-//    private double roundToNiceNumber(double num) {
-//        if (num <= 1) return 0.1;
-//        else if (num <= 2) return 0.2;
-//        else if (num <= 5) return 0.5;
-//        else if (num <= 10) return 1;
-//        else if (num <= 20) return 2;
-//        else if (num <= 50) return 5;
-//        else if (num <= 100) return 10;
-//        else if (num <= 200) return 20;
-//        else if (num <= 500) return 50;
-//        else return 100;
-//    }
 
     private double roundToNiceNumber(double num, int height) {
         double approxLabels = height / 25.0;

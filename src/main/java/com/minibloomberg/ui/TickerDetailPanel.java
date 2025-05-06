@@ -4,6 +4,7 @@ import com.minibloomberg.data.HistoricalData;
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 import com.minibloomberg.logic.StockDataFetcher;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -81,21 +82,7 @@ public class TickerDetailPanel extends JPanel {
 
         String[] ranges = {"1M", "3M", "6M", "1Y", "All"};
         for (String range : ranges) {
-            JButton button = new JButton(range);
-            button.setFocusPainted(false);
-            button.setBackground(Color.BLACK);
-            button.setForeground(Color.YELLOW);
-            button.setFont(new Font("Consolas", Font.BOLD, 14));
-            button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            button.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
-
-            button.setOpaque(true);
-            button.setContentAreaFilled(true);
-
-            button.addActionListener(e -> {
-                updateChartForRange(range);
-                updateActiveButton(button);
-            });
+            JButton button = getjButton(range);
 
             rangeButtonPanel.add(button);
 
@@ -161,6 +148,26 @@ public class TickerDetailPanel extends JPanel {
         buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 50, 0));
         add(buttonPanel);
+    }
+
+    @NotNull
+    private JButton getjButton(String range) {
+        JButton button = new JButton(range);
+        button.setFocusPainted(false);
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.YELLOW);
+        button.setFont(new Font("Consolas", Font.BOLD, 14));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createLineBorder(Color.YELLOW));
+
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+
+        button.addActionListener(e -> {
+            updateChartForRange(range);
+            updateActiveButton(button);
+        });
+        return button;
     }
 
     public String getCurrentTicker() {
