@@ -1,7 +1,7 @@
-# Compiled class file
+# Java class files
 *.class
 
-# Log file
+# Log files
 *.log
 
 # BlueJ files
@@ -10,7 +10,7 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package files
 *.jar
 *.war
 *.nar
@@ -19,8 +19,38 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# VM crash logs
 hs_err_pid*
 replay_pid*
 
+# Environment files
 .env
+
+# Maven build output
+/target/
+
+# IntelliJ / VS Code / Eclipse files
+.idea/
+*.iml
+.vscode/
+*.iws
+*.ipr
+*.bak
+*.swp
+*.tmp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup or autosave files
+*.lst
+*.orig
+
+# Ignore specific files
+.LCKMainWindow.java~
+
+# Keep empty folders with .gitkeep but ignore the rest of target/classes
+target/classes/
+!target/classes/**/.gitkeep
