@@ -9,8 +9,11 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import com.minibloomberg.logic.LivePriceManager;
+import com.minibloomberg.logic.TradeTapeManager;
 import com.minibloomberg.ui.NewsPanel;
+import com.minibloomberg.ui.TradeTapePanel;
 import com.minibloomberg.ui.WatchlistPanel;
+
 
 public class MainWindow extends JFrame {
 
@@ -46,6 +49,15 @@ public class MainWindow extends JFrame {
         NewsPanel newsPanel = new NewsPanel();
         newsPanel.setPreferredSize(new Dimension(350, 0));
         add(newsPanel, BorderLayout.EAST);
+        
+
+        TradeTapeManager manager = new TradeTapeManager();
+        TradeTapePanel tapePanel = new TradeTapePanel(manager);
+        manager.setTradeListener(tapePanel::displayTrade);
+        manager.connect();
+        tapePanel.setAfterHoursMode(!manager.isMarketOpen());
+
+        add(tapePanel, BorderLayout.SOUTH); 
 
 
         getContentPane().setBackground(new Color(0x1e1e1e)); 

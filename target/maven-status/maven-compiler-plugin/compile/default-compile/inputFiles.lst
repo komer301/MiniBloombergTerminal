@@ -2,7 +2,9 @@
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/logic/LivePriceManager.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/data/TradeData.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/ui/NewsPanel.java
+/Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/ui/TradeTapePanel.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/ui/WatchlistPanel.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/logic/NewsFetcher.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/data/WatchlistItem.java
+/Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/logic/TradeTapeManager.java
 /Users/khalid/Desktop/NYU/Java/project/src/main/java/com/minibloomberg/MainWindow.java
