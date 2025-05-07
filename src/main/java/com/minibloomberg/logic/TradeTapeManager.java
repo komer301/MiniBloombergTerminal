@@ -104,7 +104,6 @@ public class TradeTapeManager {
         try {
             for (String symbol : fetchTopTickersFromAPI()) {
                 subscribe(symbol);
-                System.out.println("Subscribed to" + symbol);
             }
         } catch (Exception e) {
             System.err.println("Error subscribing to top tickers: " + e.getMessage());
