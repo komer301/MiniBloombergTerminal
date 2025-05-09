@@ -4,7 +4,6 @@ import com.minibloomberg.data.HistoricalData;
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.Stock;
 import com.minibloomberg.logic.StockDataFetcher;
-import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
@@ -80,13 +79,13 @@ public class TickerDetailPanel extends JPanel {
         JPanel rangeButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         rangeButtonPanel.setOpaque(false);
 
-        String[] ranges = {"1M", "3M", "6M", "1Y", "All"};
+        String[] ranges = {"Max", "1Y", "6M", "3M", "1M", "1W", "3D"};
         for (String range : ranges) {
             JButton button = getjButton(range);
 
             rangeButtonPanel.add(button);
 
-            if (range.equals("All")) {
+            if (range.equals("3D")) {
                 activeRangeButton = button;
                 highlightButton(activeRangeButton);
             }
@@ -99,6 +98,7 @@ public class TickerDetailPanel extends JPanel {
         chartPanel.setHistoricalData(fullData);
         chartPanel.setPreferredSize(new Dimension(800, 400));
         innerPanel.add(chartPanel);
+        updateChartForRange("3D");
 
         chartContainer.add(innerPanel);
 
@@ -150,7 +150,6 @@ public class TickerDetailPanel extends JPanel {
         add(buttonPanel);
     }
 
-    @NotNull
     private JButton getjButton(String range) {
         JButton button = new JButton(range);
         button.setFocusPainted(false);
@@ -214,6 +213,8 @@ public class TickerDetailPanel extends JPanel {
         List<Double> closePrices = fullData.closePrices;
 
         int daysBack = switch (selectedRange) {
+            case "3D" -> 3;
+            case "1W" -> 7;
             case "1M" -> 21;
             case "3M" -> 63;
             case "6M" -> 126;

@@ -9,7 +9,6 @@ import java.awt.event.MouseEvent;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class ChartPanel extends JPanel {
@@ -44,29 +43,27 @@ public class ChartPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (data == null || data.timestamps.isEmpty()) {
-            return;
-        }
+        if (data == null || data.timestamps.isEmpty()) return;
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         int width = getWidth();
         int height = getHeight();
+        int margin = 70;
 
-        List<Double> prices = data.closePrices;
-        List<Long> timestamps = data.timestamps;
+        drawYAxis(g2d, data.closePrices, width, height, margin);
+        drawPriceLines(g2d, data.closePrices, width, height, margin);
+        drawXAxisLabels(g2d, width, height, margin, data.timestamps);
+        drawHoverCrosshair(g2d, data.closePrices, data.timestamps, width, height, margin);
+    }
 
+    private void drawYAxis(Graphics2D g2d, List<Double> prices, int width, int height, int margin) {
         double minPrice = prices.stream().min(Double::compareTo).orElse(0.0);
         double maxPrice = prices.stream().max(Double::compareTo).orElse(1.0);
 
-        int margin = 70;
-        int n = prices.size();
-
-        // Draw Y-axis price labels
         double priceRange = maxPrice - minPrice;
         double interval = roundToNiceNumber(priceRange, height);
-
         double niceMin = Math.floor(minPrice / interval) * interval;
         double niceMax = Math.ceil(maxPrice / interval) * interval;
 
@@ -77,13 +74,17 @@ public class ChartPanel extends JPanel {
             int y = margin + (int) ((maxPrice - p) / (maxPrice - minPrice) * (height - 2 * margin));
             g2d.drawString(String.format("%.2f", p), 5, y + 5);
 
-            // Draw light horizontal gridlines (comment this out if you want no gridlines)
             g2d.setColor(new Color(200, 200, 200, 50));
             g2d.drawLine(margin, y, width - margin, y);
             g2d.setColor(Color.LIGHT_GRAY);
         }
+    }
 
-        // Draw stock price lines (green for up, red for down)
+    private void drawPriceLines(Graphics2D g2d, List<Double> prices, int width, int height, int margin) {
+        double minPrice = prices.stream().min(Double::compareTo).orElse(0.0);
+        double maxPrice = prices.stream().max(Double::compareTo).orElse(1.0);
+        int n = prices.size();
+
         g2d.setStroke(new BasicStroke(2));
         for (int i = 1; i < n; i++) {
             int x1 = margin + (i - 1) * (width - 2 * margin) / (n - 1);
@@ -92,97 +93,95 @@ public class ChartPanel extends JPanel {
             int y1 = margin + (int) ((maxPrice - prices.get(i - 1)) / (maxPrice - minPrice) * (height - 2 * margin));
             int y2 = margin + (int) ((maxPrice - prices.get(i)) / (maxPrice - minPrice) * (height - 2 * margin));
 
-            if (prices.get(i) >= prices.get(i - 1)) {
-                g2d.setColor(Color.GREEN);
-            } else {
-                g2d.setColor(Color.RED);
-            }
+            g2d.setColor(prices.get(i) >= prices.get(i - 1) ? Color.GREEN : Color.RED);
             g2d.drawLine(x1, y1, x2, y2);
         }
+    }
 
-        // Draw month/year labels at bottom (depending on length of data)
+    private void drawXAxisLabels(Graphics2D g2d, int width, int height, int margin, List<Long> timestamps) {
+        int n = timestamps.size();
+        LocalDate start = Instant.ofEpochSecond(timestamps.get(0)).atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate end = Instant.ofEpochSecond(timestamps.get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate();
+
+        long totalDays = java.time.temporal.ChronoUnit.DAYS.between(start, end);
+        int totalYears = end.getYear() - start.getYear();
+
         g2d.setColor(Color.YELLOW);
         g2d.setFont(new Font("Consolas", Font.BOLD, 12));
 
-        LocalDate start = Instant.ofEpochSecond(timestamps.get(0)).atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate end = Instant.ofEpochSecond(timestamps.get(timestamps.size() - 1)).atZone(ZoneId.systemDefault()).toLocalDate();
-        int totalYears = end.getYear() - start.getYear();
-
         LocalDate lastLabeled = null;
-        if (totalYears < 2) {
-            // Show month labels
-            for (int i = 0; i < n; i++) {
-                int x = margin + i * (width - 2 * margin) / (n - 1);
-                LocalDate date = Instant.ofEpochSecond(timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
 
+        for (int i = 0; i < n; i++) {
+            int x = margin + i * (width - 2 * margin) / (n - 1);
+            LocalDate date = Instant.ofEpochSecond(timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
+
+            if (totalDays <= 10) {
+                if (!date.equals(lastLabeled)) {
+                    String label = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd"));
+                    g2d.drawString(label, x - 15, height - margin / 3);
+                    lastLabeled = date;
+                }
+            } else if (totalDays <= 370) {
                 boolean isNearStart = date.getDayOfMonth() <= 5;
                 boolean isNearEnd = date.getDayOfMonth() >= date.lengthOfMonth() - 5;
 
                 if ((lastLabeled == null || !sameMonthYear(date, lastLabeled)) && !isNearStart && !isNearEnd) {
-                    String monthLabel = date.format(DateTimeFormatter.ofPattern("MMM"));
+                    String monthLabel = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM"));
                     g2d.drawString(monthLabel, x - 10, height - margin / 3);
                     lastLabeled = date;
                 }
-            }
-        } else {
-            // Show dynamic year labels
-            int labelInterval = (totalYears >= 20) ? 5 : (totalYears >= 10) ? 2 : 1;
+            } else {
+                int yearInterval = (totalYears >= 20) ? 5 : (totalYears >= 10) ? 2 : 1;
 
-            for (int i = 0; i < n; i++) {
-                int x = margin + i * (width - 2 * margin) / (n - 1);
-                LocalDate date = Instant.ofEpochSecond(timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
-
-                if (lastLabeled == null || date.getYear() >= lastLabeled.getYear() + labelInterval) {
+                if (lastLabeled == null || date.getYear() >= lastLabeled.getYear() + yearInterval) {
                     g2d.drawString(String.valueOf(date.getYear()), x - 10, height - margin / 3);
                     lastLabeled = date;
                 }
             }
         }
+    }
 
-        // Draw hover cross-hair if mouse is on grid
-        if (hoverX != null) {
-            g2d.setColor(Color.GRAY);
-            g2d.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
 
-            int usableWidth = width - 2 * margin;
-            int usableHeight = height - 2 * margin;
-            int nearestIdx = Math.min(n - 1, Math.max(0, (hoverX - margin) * (n - 1) / usableWidth));
+    private void drawHoverCrosshair(Graphics2D g2d, List<Double> prices, List<Long> timestamps, int width, int height, int margin) {
+        if (hoverX == null) return;
 
-            int x = margin + nearestIdx * usableWidth / (n - 1);
-            int y = margin + (int) ((maxPrice - prices.get(nearestIdx)) / (maxPrice - minPrice) * usableHeight);
+        int n = prices.size();
+        int usableWidth = width - 2 * margin;
+        int usableHeight = height - 2 * margin;
+        int nearestIdx = Math.min(n - 1, Math.max(0, (hoverX - margin) * (n - 1) / usableWidth));
 
-            // Vertical line
-            g2d.drawLine(x, margin, x, height - margin);
-            // Horizontal line
-            g2d.drawLine(margin, y, width - margin, y);
+        double minPrice = prices.stream().min(Double::compareTo).orElse(0.0);
+        double maxPrice = prices.stream().max(Double::compareTo).orElse(1.0);
 
-            // Labels
-            String dateLabel = Instant.ofEpochSecond(timestamps.get(nearestIdx))
-                    .atZone(ZoneId.systemDefault()).toLocalDate()
-                    .format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+        int x = margin + nearestIdx * usableWidth / (n - 1);
+        int y = margin + (int) ((maxPrice - prices.get(nearestIdx)) / (maxPrice - minPrice) * usableHeight);
 
-            String priceLabel = String.format("$%.2f", prices.get(nearestIdx));
+        g2d.setColor(Color.GRAY);
+        g2d.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
+        g2d.drawLine(x, margin, x, height - margin);
+        g2d.drawLine(margin, y, width - margin, y);
 
-            Font font = new Font("Consolas", Font.PLAIN, 12);
-            g2d.setFont(font);
-            FontMetrics metrics = g2d.getFontMetrics(font);
+        String dateLabel = Instant.ofEpochSecond(timestamps.get(nearestIdx))
+                .atZone(ZoneId.systemDefault()).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+        String priceLabel = String.format("$%.2f", prices.get(nearestIdx));
 
-            int dateLabelWidth = metrics.stringWidth(dateLabel);
-            int dateLabelHeight = metrics.getHeight();
+        Font font = new Font("Consolas", Font.PLAIN, 12);
+        g2d.setFont(font);
+        FontMetrics metrics = g2d.getFontMetrics(font);
 
-            // Draw white background behind hover date
-            int dateBoxX = Math.max(margin, x - dateLabelWidth / 2 - 5);
-            int dateBoxY = height - margin / 2 - dateLabelHeight;
+        int dateLabelWidth = metrics.stringWidth(dateLabel);
+        int dateLabelHeight = metrics.getHeight();
 
-            g2d.setColor(new Color(0, 0, 0, 200));
-            g2d.fillRect(dateBoxX, dateBoxY, dateLabelWidth + 10, dateLabelHeight);
+        int dateBoxX = Math.max(margin, x - dateLabelWidth / 2 - 5);
+        int dateBoxY = height - margin / 2 - dateLabelHeight;
 
-            g2d.setColor(Color.WHITE);
-            g2d.drawString(dateLabel, dateBoxX + 5, dateBoxY + metrics.getAscent());
+        g2d.setColor(new Color(0, 0, 0, 200));
+        g2d.fillRect(dateBoxX, dateBoxY, dateLabelWidth + 10, dateLabelHeight);
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(dateLabel, dateBoxX + 5, dateBoxY + metrics.getAscent());
 
-            // Draw price label to the right of chart
-            g2d.drawString(priceLabel, width - margin + 5, y);
-        }
+        g2d.drawString(priceLabel, width - margin + 5, y);
     }
 
     private boolean sameMonthYear(LocalDate d1, LocalDate d2) {

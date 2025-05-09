@@ -2,7 +2,6 @@ package com.minibloomberg.logic;
 
 import com.minibloomberg.data.HistoricalData;
 import io.github.cdimascio.dotenv.Dotenv;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -19,10 +18,9 @@ import java.util.List;
 public class StockDataFetcher {
     private static final Dotenv dotenv = Dotenv.load();
     private static final String finnhubApiKey = dotenv.get("FINNHUB_API_KEY");
-    private static final String alphaVantageApiKey = dotenv.get("ALPHA_VANTAGE_API_KEY");
+    private static final String alphaVantageApiKey = dotenv.get("ALPHA_API_KEY");
     private static final String finnhubUrl = "https://finnhub.io/api/v1/";
 
-    @NotNull
     private static JSONObject getJsonObject(HttpURLConnection conn) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
         StringBuilder response = new StringBuilder();
