@@ -18,7 +18,7 @@ import com.minibloomberg.ui.WatchlistPanel;
 public class MainWindow extends JFrame {
 
     public MainWindow() {
-        setTitle("Mini Bloomberg Terminal");
+        setTitle("Katz Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLayout(new BorderLayout());

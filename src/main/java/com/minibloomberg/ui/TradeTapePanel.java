@@ -31,10 +31,10 @@ public class TradeTapePanel extends JPanel {
 
         setLayout(null);
         setBackground(new Color(0x1E1E1E));
-        setPreferredSize(new Dimension(0, 40));
+        setPreferredSize(new Dimension(0, 50));
 
         afterHoursBanner.setFont(new Font("Monospaced", Font.BOLD, 13));
-        afterHoursBanner.setForeground(Color.WHITE);
+        afterHoursBanner.setForeground(Color.ORANGE);
         afterHoursBanner.setBounds(10, 0, 350, 20);
         add(afterHoursBanner);
         afterHoursBanner.setVisible(false);
@@ -105,7 +105,7 @@ public class TradeTapePanel extends JPanel {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Monospaced", Font.PLAIN, 14));
         if (!tradeManager.isMarketOpen()) {
-            label.setBorder(new EmptyBorder(8, 0, 0, 0));
+            label.setBorder(new EmptyBorder(12, 0, 0, 0));
         }
         label.setForeground(color);
         label.setSize(label.getPreferredSize());
