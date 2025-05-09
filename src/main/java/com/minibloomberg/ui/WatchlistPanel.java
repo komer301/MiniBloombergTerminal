@@ -26,12 +26,14 @@ public class WatchlistPanel extends JPanel {
     private static final Color HOVER_COLOR = new Color(0x2f2f2f);
     private static final Color TEXT_COLOR = Color.WHITE;
 
+//    private final JLabel placeholderLabel;
+
     public WatchlistPanel(Consumer<String> onTickerSelected) {
         this.onTickerSelected = onTickerSelected;
 
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(150, 0));
-        setBackground(BACKGROUND_COLOR); 
+        setBackground(BACKGROUND_COLOR);
 
         JLabel title = new JLabel(" Watchlist");
         title.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -46,8 +48,13 @@ public class WatchlistPanel extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(BACKGROUND_COLOR);
 
+//        placeholderLabel = new JLabel("Add stocks you want to follow to your Watchlist.");
+//        placeholderLabel.setForeground(TEXT_COLOR);
+//        placeholderLabel.setFont(new Font("SansSerif", Font.ITALIC, 14));
+//        placeholderLabel.setHorizontalAlignment(SwingConstants.CENTER);
+//        placeholderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+//        listPanel.add(placeholderLabel);
         add(listPanel, BorderLayout.CENTER);
-
     }
 
     public void updateTicker(String ticker, double price, double changePercent) {
@@ -56,6 +63,11 @@ public class WatchlistPanel extends JPanel {
             if (label == null) {
                 label = createTickerLabel(ticker, price, changePercent);
                 tickerLabels.put(ticker, label);
+
+//                if (listPanel.isAncestorOf(placeholderLabel)) {
+//                    listPanel.remove(placeholderLabel);
+//                }
+
                 listPanel.add(label);
                 revalidate();
             } else {
@@ -94,11 +106,28 @@ public class WatchlistPanel extends JPanel {
     public java.util.Set<String> getTickers() {
         return tickerLabels.keySet();
     }
-    
+
     private String formatTicker(String ticker, double price, double changePercent) {
         String arrow = changePercent > 0 ? "▲" : changePercent < 0 ? "▼" : "";
         String color = changePercent > 0 ? "#00ff00" : changePercent < 0 ? "#ff4444" : "#ffffff";
         return String.format("<html><b style='color:white;'>%s</b> $%.2f <font color='%s'>%s%.2f%%</font></html>",
                 ticker, price, color, arrow, Math.abs(changePercent));
+    }
+
+    public void removeTicker(String ticker) {
+        SwingUtilities.invokeLater(() -> {
+            JLabel label = tickerLabels.remove(ticker); // remove from the map
+            if (label != null) {
+                listPanel.remove(label);
+                listPanel.revalidate();
+                listPanel.repaint();
+            }
+
+//            if (tickerLabels.isEmpty() && !listPanel.isAncestorOf(placeholderLabel)) {
+//                listPanel.add(placeholderLabel);
+//                listPanel.revalidate();
+//                listPanel.repaint();
+//            }
+        });
     }
 }
