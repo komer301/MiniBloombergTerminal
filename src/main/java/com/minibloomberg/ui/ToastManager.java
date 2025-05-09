@@ -2,14 +2,18 @@ package com.minibloomberg.ui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public class ToastManager {
-    private static final Queue<JWindow> toastQueue = new LinkedList<>();
-    private static boolean showing = false;
+    private static JWindow currentToast = null;
+    private static Timer fadeInTimer, fadeOutTimer, pauseTimer;
 
     public static void showToast(JFrame parent, String message, ToastType type) {
+        // Dispose of current toast if it's showing
+        if (currentToast != null && currentToast.isVisible()) {
+            stopCurrentTimers();
+            currentToast.dispose();
+        }
+
         JLabel label = new JLabel("<html><div style='text-align:center;'>" + message + "</div></html>", SwingConstants.CENTER);
         label.setOpaque(true);
         label.setBackground(type.background);
@@ -17,57 +21,51 @@ public class ToastManager {
         label.setFont(new Font("Consolas", Font.PLAIN, 14));
         label.setBorder(BorderFactory.createLineBorder(type.foreground));
 
-        JWindow toast = new JWindow();
-        toast.setBackground(new Color(0, 0, 0, 0));
-        toast.getContentPane().add(label);
-        toast.setSize(360, 60);
+        currentToast = new JWindow(parent);
+        currentToast.setBackground(new Color(0, 0, 0, 0));
+        currentToast.getContentPane().add(label);
+        currentToast.setSize(360, 60);
 
         Point location = parent.getLocationOnScreen();
-        toast.setLocation(location.x + (parent.getWidth() - toast.getWidth()) / 2, location.y + 100);
+        currentToast.setLocation(location.x + (parent.getWidth() - currentToast.getWidth()) / 2, location.y + 100);
+        currentToast.setOpacity(0f);
+        currentToast.setVisible(true);
 
-        toastQueue.add(toast);
-        if (!showing) {
-            showNextToast();
-        }
-    }
-
-    private static void showNextToast() {
-        if (toastQueue.isEmpty()) {
-            showing = false;
-            return;
-        }
-
-        showing = true;
-        JWindow toast = toastQueue.poll();
-        toast.setOpacity(0f);
-        toast.setVisible(true);
-
-        Timer fadeIn = new Timer(30, null);
-        fadeIn.addActionListener(e -> {
-            float opacity = toast.getOpacity() + 0.1f;
+        fadeInTimer = new Timer(30, null);
+        fadeInTimer.addActionListener(e -> {
+            float opacity = currentToast.getOpacity() + 0.1f;
             if (opacity >= 1f) {
                 opacity = 1f;
-                ((Timer) e.getSource()).stop();
+                currentToast.setOpacity(opacity);
+                fadeInTimer.stop();
 
-                Timer pause = new Timer(2000, ev -> {
-                    Timer fadeOut = new Timer(30, null);
-                    fadeOut.addActionListener(ev2 -> {
-                        float op = toast.getOpacity() - 0.1f;
-                        if (op <= 0f) {
-                            toast.dispose();
-                            ((Timer) ev2.getSource()).stop();
-                            showNextToast();
-                        } else {
-                            toast.setOpacity(op);
-                        }
-                    });
-                    fadeOut.start();
-                });
-                pause.setRepeats(false);
-                pause.start();
+                pauseTimer = new Timer(2000, evt -> startFadeOut());
+                pauseTimer.setRepeats(false);
+                pauseTimer.start();
+            } else {
+                currentToast.setOpacity(opacity);
             }
-            toast.setOpacity(opacity);
         });
-        fadeIn.start();
+        fadeInTimer.start();
+    }
+
+    private static void startFadeOut() {
+        fadeOutTimer = new Timer(30, null);
+        fadeOutTimer.addActionListener(e -> {
+            float opacity = currentToast.getOpacity() - 0.1f;
+            if (opacity <= 0f) {
+                currentToast.dispose();
+                fadeOutTimer.stop();
+            } else {
+                currentToast.setOpacity(opacity);
+            }
+        });
+        fadeOutTimer.start();
+    }
+
+    private static void stopCurrentTimers() {
+        if (fadeInTimer != null) fadeInTimer.stop();
+        if (fadeOutTimer != null) fadeOutTimer.stop();
+        if (pauseTimer != null) pauseTimer.stop();
     }
 }

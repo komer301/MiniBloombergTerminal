@@ -1,6 +1,7 @@
 package com.minibloomberg.logic;
 
 import com.minibloomberg.data.HistoricalData;
+import com.minibloomberg.data.Stock;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -102,7 +103,7 @@ public class StockDataFetcher {
     public static HistoricalData fetchHistoricalData(String symbol) {
         try {
             String urlString = "https://www.alphavantage.co/query"
-                    + "?function=TIME_SERIES_DAILY"
+                    + "?function=TIME_SERIES_DAILY_ADJUSTED"
                     + "&symbol=" + symbol
                     + "&outputsize=full"
                     + "&apikey=" + alphaVantageApiKey;
@@ -128,7 +129,7 @@ public class StockDataFetcher {
             for (String date : dates) {
                 JSONObject dayData = timeSeries.getJSONObject(date);
 
-                double close = dayData.getDouble("4. close");
+                double close = dayData.getDouble("5. adjusted close");
 
                 long epochTime = LocalDate.parse(date)
                         .atStartOfDay(ZoneOffset.UTC)

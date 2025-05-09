@@ -2,7 +2,7 @@ package com.minibloomberg.ui;
 
 import com.minibloomberg.data.HistoricalData;
 import com.minibloomberg.logic.LivePriceManager;
-import com.minibloomberg.logic.Stock;
+import com.minibloomberg.data.Stock;
 import com.minibloomberg.logic.StockDataFetcher;
 
 import javax.swing.*;
@@ -58,7 +58,7 @@ public class TickerDetailPanel extends JPanel {
 
         infoPanel.add(createStyledLabel("Symbol:", snapshot.symbol, TEXT_PRIMARY));
         infoPanel.add(createStyledLabel("Company:", snapshot.companyName, TEXT_NEUTRAL));
-        infoPanel.add(createStyledLabel("Change:", "$" + snapshot.change, changeColor));
+        infoPanel.add(createStyledLabel("Change:", "$" + String.format("%.2f", snapshot.change), changeColor));
         infoPanel.add(createStyledLabel("Percent Change:", snapshot.percentChange + "%", changeColor));
         infoPanel.add(createStyledLabel("Previous Close:", "$" + snapshot.previousClose, TEXT_NEUTRAL));
         infoPanel.add(createStyledLabel("Current Price:", "$" + snapshot.currentPrice, TEXT_NEUTRAL));
@@ -79,7 +79,7 @@ public class TickerDetailPanel extends JPanel {
         JPanel rangeButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         rangeButtonPanel.setOpaque(false);
 
-        String[] ranges = {"Max", "1Y", "6M", "3M", "1M", "1W", "3D"};
+        String[] ranges = {"All", "1Y", "6M", "3M", "1M", "1W", "3D"};
         for (String range : ranges) {
             JButton button = getjButton(range);
 

@@ -1,7 +1,7 @@
 package com.minibloomberg.ui;
 
 import com.minibloomberg.logic.LivePriceManager;
-import com.minibloomberg.logic.Stock;
+import com.minibloomberg.data.Stock;
 import com.minibloomberg.MainWindow;
 
 public class SearchController {

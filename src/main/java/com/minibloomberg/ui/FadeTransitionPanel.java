@@ -31,7 +31,7 @@ public class FadeTransitionPanel extends JPanel {
         alpha = 0f;
 
         // Start fading in the new component
-        fadeTimer = new Timer(15, e -> {
+        fadeTimer = new Timer(10, e -> {
             alpha += 0.05f;
             if (alpha >= 1f) {
                 alpha = 1f;

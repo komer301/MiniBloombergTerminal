@@ -1,4 +1,4 @@
-package com.minibloomberg.logic;
+package com.minibloomberg.data;
 
 public class Stock {
     public final String symbol;
