@@ -31,6 +31,7 @@ public class TradeTapeManager {
     private TradeListener listener;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService tradeSimulatorExecutor = Executors.newSingleThreadScheduledExecutor();
     private boolean lastMarketStatus = isMarketOpen();
 
     public enum TradeType {
@@ -115,7 +116,11 @@ public class TradeTapeManager {
                             trade.getLong("t"),
                             TradeType.REALTIME
                         );
-                        tradeQueue.offer(item);
+                        boolean added = tradeQueue.offer(item);
+                        if (!added) {
+                            System.err.println("[TradeTapeManager] Warning: tradeQueue full. Dropping item: " + item);
+                        }
+
                         if (listener != null) listener.onTrade(item);
                     }
                 }
@@ -124,14 +129,14 @@ public class TradeTapeManager {
                     System.out.println("WebSocket closed: " + reason);
                 }
 
-                @Override public void onError(Exception ex) {
-                    ex.printStackTrace();
+                @Override public void onError(Exception e) {
+                    System.err.println("[NewsFetcher] JSON parsing error: " + e.getMessage());
                 }
             };
 
             client.connect();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[NewsFetcher] Failed to fetch news:");
         }
     }
 
@@ -158,42 +163,41 @@ public class TradeTapeManager {
             JSONArray losers = response.getJSONArray("top_losers");
             JSONArray active = response.getJSONArray("most_actively_traded");
 
-            new Thread(() -> {
+            tradeSimulatorExecutor.scheduleAtFixedRate(() -> {
                 try {
-                    while (true) {
-                        long now = System.currentTimeMillis();
+                    long now = System.currentTimeMillis();
 
-                        simulateTrades("Top Gainers", gainers, TradeType.GAINER, now);
-                        simulateTrades("Top Losers", losers, TradeType.LOSER, now);
-                        simulateTrades("Most Active", active, TradeType.ACTIVE, now);
-                    }
+                    simulateTrades("Top Gainers", gainers, TradeType.GAINER, now);
+                    simulateTrades("Top Losers", losers, TradeType.LOSER, now);
+                    simulateTrades("Most Active", active, TradeType.ACTIVE, now);
                 } catch (Exception e) {
-                    System.err.println("Error simulating after-hours loop: " + e.getMessage());
+                    System.err.println("Error simulating after-hours trades: " + e.getMessage());
                 }
-            }).start();
+            }, 0, 800, TimeUnit.SECONDS);  // adjust frequency to desired pacing
 
         } catch (Exception e) {
             System.err.println("Failed to load fallback tickers: " + e.getMessage());
         }
     }
 
-    private void simulateTrades(String header, JSONArray data, TradeType type, long now) throws InterruptedException {
+    private void simulateTrades(String header, JSONArray data, TradeType type, long now) {
         if (listener != null) {
             listener.onTrade(new TradeItem(header, 0, 0, now, TradeType.HEADER));
         }
+
         for (int i = 0; i < data.length(); i++) {
             JSONObject obj = data.getJSONObject(i);
             TradeItem item = new TradeItem(
-                obj.getString("ticker"),
-                obj.optDouble("price", 0),
-                Double.parseDouble(obj.getString("change_percentage").replace("%", "").trim()),
-                now,
-                type
+                    obj.getString("ticker"),
+                    obj.optDouble("price", 0),
+                    Double.parseDouble(obj.getString("change_percentage").replace("%", "").trim()),
+                    now,
+                    type
             );
             if (listener != null) listener.onTrade(item);
-            Thread.sleep(800);
         }
     }
+
 
     private JSONObject fetchTopTickersJSON() throws Exception {
         Dotenv dotenv = Dotenv.load();
@@ -228,12 +232,6 @@ public class TradeTapeManager {
     public void subscribe(String symbol) {
         if (client != null && client.isOpen()) {
             client.send("{\"type\":\"subscribe\",\"symbol\":\"" + symbol + "\"}");
-        }
-    }
-
-    public void unsubscribe(String symbol) {
-        if (client != null && client.isOpen()) {
-            client.send("{\"type\":\"unsubscribe\",\"symbol\":\"" + symbol + "\"}");
         }
     }
 
@@ -282,19 +280,6 @@ public class TradeTapeManager {
         }
     }
 
-    public static class TradeItem {
-        public final String symbol;
-        public final double price;
-        public final double volume;
-        public final long timestamp;
-        public final TradeType type;
-
-        public TradeItem(String symbol, double price, double volume, long timestamp, TradeType type) {
-            this.symbol = symbol;
-            this.price = price;
-            this.volume = volume;
-            this.timestamp = timestamp;
-            this.type = type;
-        }
+    public record TradeItem(String symbol, double price, double volume, long timestamp, TradeType type) {
     }
 }

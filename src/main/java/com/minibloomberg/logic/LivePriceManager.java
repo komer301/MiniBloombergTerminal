@@ -13,7 +13,6 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.minibloomberg.data.TradeData;
 import com.minibloomberg.ui.WatchlistPanel;
 
 import io.github.cdimascio.dotenv.Dotenv;
@@ -63,19 +62,19 @@ public class LivePriceManager {
 
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
-                    System.out.println("WebSocket closed: " + reason);
+                    System.err.printf("[WebSocket] Closed: Code=%d Reason=%s Remote=%b%n", code, reason, remote);
                 }
 
                 @Override
                 public void onError(Exception ex) {
-                    ex.printStackTrace();
+                    System.err.println("[WebSocket] Error occurred:");
                 }
             };
 
             client.connect();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[Critical] Failed to establish WebSocket connection:");
         }
 
 
@@ -83,7 +82,7 @@ public class LivePriceManager {
             for (Map.Entry<String, TradeData> entry : tickerData.entrySet()) {
                 String symbol = entry.getKey();
                 TradeData trade = entry.getValue();
-                watchlistPanel.updateTicker(symbol, trade.getPrice(), trade.getChangePercent());
+                watchlistPanel.updateTicker(symbol, trade.price(), trade.changePercent());
             }
         }, 0, 1, TimeUnit.SECONDS);
 
@@ -96,14 +95,14 @@ public class LivePriceManager {
     }
 
     public void addTicker(Stock stock) {
-        String symbol = stock.symbol;
+        String symbol = stock.symbol();
 
         if (!tickerData.containsKey(symbol)) {
-            double price = stock.currentPrice;
-            double percentChange = stock.percentChange;
+            double price = stock.currentPrice();
+            double percentChange = stock.percentChange();
 
             tickerData.put(symbol, new TradeData(price, percentChange));
-            basePrices.put(symbol, stock.previousClose);
+            basePrices.put(symbol, stock.previousClose());
 
             watchlistPanel.updateTicker(symbol, price, percentChange);
 
@@ -126,5 +125,8 @@ public class LivePriceManager {
 
     public boolean containsTicker(String symbol) {
         return tickerData.containsKey(symbol);
+    }
+
+    public record TradeData(double price, double changePercent) {
     }
 }

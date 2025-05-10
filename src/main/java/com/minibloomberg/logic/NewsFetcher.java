@@ -1,6 +1,7 @@
 package com.minibloomberg.logic;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -22,20 +23,7 @@ public class NewsFetcher {
             Dotenv dotenv = Dotenv.load();
             String apiKey = dotenv.get("FINNHUB_API_KEY");
 
-            String baseUrl = "https://finnhub.io/api/v1/news";
-            String params = "category=general&token=" + apiKey ;
-            String fullUrl = baseUrl + "?" + params;
-
-            URL url = new URL(fullUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder json = new StringBuilder();
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) json.append(inputLine);
-            in.close();
-
-            JSONArray arr = new JSONArray(json.toString());
+            JSONArray arr = getObjects(apiKey);
             for (int i = 0; i < 50; i++) {
                 JSONObject item = arr.getJSONObject(i);
 
@@ -54,9 +42,26 @@ public class NewsFetcher {
         }
             
         catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[NewsFetcher] Failed to fetch news:");
         }
         return articles;
+    }
+
+    private static JSONArray getObjects(String apiKey) throws IOException {
+        String baseUrl = "https://finnhub.io/api/v1/news";
+        String params = "category=general&token=" + apiKey;
+        String fullUrl = baseUrl + "?" + params;
+
+        URL url = new URL(fullUrl);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder json = new StringBuilder();
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) json.append(inputLine);
+        in.close();
+
+        return new JSONArray(json.toString());
     }
 
     public static String truncateSummary(String summary, int maxLen) {

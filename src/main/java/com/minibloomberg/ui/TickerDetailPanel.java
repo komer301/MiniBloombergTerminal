@@ -54,16 +54,16 @@ public class TickerDetailPanel extends JPanel {
             return;
         }
 
-        Color changeColor = snapshot.change >= 0 ? TEXT_GAIN : TEXT_LOSS;
+        Color changeColor = snapshot.change() >= 0 ? TEXT_GAIN : TEXT_LOSS;
 
-        infoPanel.add(createStyledLabel("Symbol:", snapshot.symbol, TEXT_PRIMARY));
-        infoPanel.add(createStyledLabel("Company:", snapshot.companyName, TEXT_NEUTRAL));
-        infoPanel.add(createStyledLabel("Change:", "$" + String.format("%.2f", snapshot.change), changeColor));
-        infoPanel.add(createStyledLabel("Percent Change:", snapshot.percentChange + "%", changeColor));
-        infoPanel.add(createStyledLabel("Previous Close:", "$" + snapshot.previousClose, TEXT_NEUTRAL));
-        infoPanel.add(createStyledLabel("Current Price:", "$" + snapshot.currentPrice, TEXT_NEUTRAL));
-        infoPanel.add(createStyledLabel("Day Low:", "$" + snapshot.dayLow, TEXT_NEUTRAL));
-        infoPanel.add(createStyledLabel("Day High:", "$" + snapshot.dayHigh, TEXT_NEUTRAL));
+        infoPanel.add(createStyledLabel("Symbol:", snapshot.symbol(), TEXT_PRIMARY));
+        infoPanel.add(createStyledLabel("Company:", snapshot.companyName(), TEXT_NEUTRAL));
+        infoPanel.add(createStyledLabel("Change:", "$" + String.format("%.2f", snapshot.change()), changeColor));
+        infoPanel.add(createStyledLabel("Percent Change:", snapshot.percentChange() + "%", changeColor));
+        infoPanel.add(createStyledLabel("Previous Close:", "$" + snapshot.previousClose(), TEXT_NEUTRAL));
+        infoPanel.add(createStyledLabel("Current Price:", "$" + snapshot.currentPrice(), TEXT_NEUTRAL));
+        infoPanel.add(createStyledLabel("Day Low:", "$" + snapshot.dayLow(), TEXT_NEUTRAL));
+        infoPanel.add(createStyledLabel("Day High:", "$" + snapshot.dayHigh(), TEXT_NEUTRAL));
 
         infoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         add(infoContainer);
@@ -170,7 +170,7 @@ public class TickerDetailPanel extends JPanel {
     }
 
     public String getCurrentTicker() {
-        return snapshot != null ? snapshot.symbol : null;
+        return snapshot != null ? snapshot.symbol() : null;
     }
 
     private JLabel createStyledLabel(String label, String value, Color valueColor) {
@@ -209,8 +209,8 @@ public class TickerDetailPanel extends JPanel {
     private void updateChartForRange(String selectedRange) {
         if (fullData == null) return;
 
-        List<Long> timestamps = fullData.timestamps;
-        List<Double> closePrices = fullData.closePrices;
+        List<Long> timestamps = fullData.timestamps();
+        List<Double> closePrices = fullData.closePrices();
 
         int daysBack = switch (selectedRange) {
             case "3D" -> 3;

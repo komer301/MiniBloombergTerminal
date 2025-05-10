@@ -39,12 +39,7 @@ public class NewsPanel extends JPanel {
 
     // Auto-scroll state
     private final Timer autoScrollTimer;
-    private final int scrollSpeedMs = 50;  // Delay (ms) between scroll steps (smaller = faster)
-    private final int scrollStepPx = 1;    // Pixels to scroll per step (smaller = smoother)
     private boolean isMouseOver = false;   // Tracks if mouse is hovering
-
-    private final Timer refreshTimer;
-    private final int refreshIntervalMs = 600_000; // refresh news every 10 minutes
 
 
     public NewsPanel() {
@@ -83,8 +78,12 @@ public class NewsPanel extends JPanel {
             }
         });
 
+        // Delay (ms) between scroll steps (smaller = faster)
+        int scrollSpeedMs = 50;
         autoScrollTimer = new Timer(scrollSpeedMs, e -> autoScrollStep());
-        refreshTimer = new Timer(refreshIntervalMs, e -> fetchNewsInBackground());
+        // refresh news every 10 minutes
+        int refreshIntervalMs = 600_000;
+        Timer refreshTimer = new Timer(refreshIntervalMs, e -> fetchNewsInBackground());
         refreshTimer.setRepeats(true);
         refreshTimer.start();
 
@@ -122,7 +121,7 @@ public class NewsPanel extends JPanel {
         panel.setMaximumSize(new Dimension(9999, 120));
 
         // Headline (title) label - clickable, underlined, pauses scroll on hover
-        String safeTitle = NewsFetcher.truncateSummary(article.getTitle(), 70);
+        String safeTitle = NewsFetcher.truncateSummary(article.title(), 70);
         JLabel titleLabel = new JLabel("<html><div style='width:260px; color:#62b6f7; font-weight:bold; word-break:break-word;'>" +
                 "<u>" + safeTitle + "</u></div></html>");
         titleLabel.setForeground(new Color(0x62b6f7));
@@ -132,7 +131,7 @@ public class NewsPanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 try {
-                    Desktop.getDesktop().browse(new URI(article.getUrl()));
+                    Desktop.getDesktop().browse(new URI(article.url()));
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(panel, "Could not open link.");
                 }
@@ -150,14 +149,14 @@ public class NewsPanel extends JPanel {
         });
 
         // Meta info (source + date)
-        String published = formatDate(article.getTimePublished());
-        JLabel metaLabel = new JLabel(article.getSource() + " • " + published);
+        String published = formatDate(article.timePublished());
+        JLabel metaLabel = new JLabel(article.source() + " • " + published);
         metaLabel.setForeground(new Color(0xbbbbbb));
         metaLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         // Summary label (text wraps)
         JLabel summaryLabel = new JLabel("<html><div style='width:260px; color:#cccccc; word-break:break-word;'>" +
-                article.getSummary() + "</div></html>");
+                article.summary() + "</div></html>");
         summaryLabel.setForeground(Color.LIGHT_GRAY);
         summaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         summaryLabel.setBorder(new EmptyBorder(7, 0, 0, 0));
@@ -217,6 +216,8 @@ public class NewsPanel extends JPanel {
         if (curr >= max) {
             vbar.setValue(0); // Loop to top
         } else {
+            // Pixels to scroll per step (smaller = smoother)
+            int scrollStepPx = 1;
             vbar.setValue(curr + scrollStepPx);
         }
     }

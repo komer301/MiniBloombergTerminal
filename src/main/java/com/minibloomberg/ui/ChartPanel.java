@@ -43,7 +43,7 @@ public class ChartPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (data == null || data.timestamps.isEmpty()) return;
+        if (data == null || data.timestamps().isEmpty()) return;
 
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -54,7 +54,7 @@ public class ChartPanel extends JPanel {
         int topMargin = 35;
         int bottomMargin = 70;
 
-        List<Double> prices = data.closePrices;
+        List<Double> prices = data.closePrices();
 
         // Font setup for labels
         Font labelFont = new Font("Consolas", Font.BOLD, 12);
@@ -125,13 +125,13 @@ public class ChartPanel extends JPanel {
         g2.setColor(Color.YELLOW);
 
         int totalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(
-                Instant.ofEpochSecond(data.timestamps.get(0)).atZone(ZoneId.systemDefault()).toLocalDate(),
-                Instant.ofEpochSecond(data.timestamps.get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate());
+                Instant.ofEpochSecond(data.timestamps().get(0)).atZone(ZoneId.systemDefault()).toLocalDate(),
+                Instant.ofEpochSecond(data.timestamps().get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate());
 
         LocalDate lastLabeled = null;
         for (int i = 0; i < n; i++) {
             int x = marginX + i * (width - 2 * marginX) / (n - 1);
-            LocalDate date = Instant.ofEpochSecond(data.timestamps.get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate date = Instant.ofEpochSecond(data.timestamps().get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
 
             if (totalDays <= 10) {
                 if (!date.equals(lastLabeled)) {
@@ -174,7 +174,7 @@ public class ChartPanel extends JPanel {
             g2.drawLine(x, topMargin, x, topMargin + usableHeight);
             g2.drawLine(marginX, y, width - marginX, y);
 
-            String dateLabel = Instant.ofEpochSecond(data.timestamps.get(nearestIdx))
+            String dateLabel = Instant.ofEpochSecond(data.timestamps().get(nearestIdx))
                     .atZone(ZoneId.systemDefault()).toLocalDate()
                     .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"));
             String priceLabel = String.format("$%.2f", prices.get(nearestIdx));

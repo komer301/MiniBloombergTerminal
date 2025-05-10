@@ -19,7 +19,6 @@ import com.minibloomberg.logic.TradeTapeManager;
 import com.minibloomberg.logic.TradeTapeManager.TradeItem;
 
 public class TradeTapePanel extends JPanel {
-    private final Timer animationTimer;
     private final List<JLabel> tradeLabels = new ArrayList<>();
     private final TradeTapeManager tradeManager;
     private final JLabel afterHoursBanner = new JLabel("AFTER HOURS", SwingConstants.LEFT);
@@ -39,7 +38,7 @@ public class TradeTapePanel extends JPanel {
         add(afterHoursBanner);
         afterHoursBanner.setVisible(false);
 
-        animationTimer = new Timer(30, e -> onTick());
+        Timer animationTimer = new Timer(30, e -> onTick());
         animationTimer.start();
     }
 
@@ -85,11 +84,11 @@ public class TradeTapePanel extends JPanel {
     }
 
     private String formatTradeText(TradeItem trade) {
-        return switch (trade.type) {
-            case HEADER -> trade.symbol;
-            case GAINER, LOSER -> String.format("%s $%.2f (%.1f%%)", trade.symbol, trade.price, trade.volume);
-            case ACTIVE -> String.format("%s %.1fM", trade.symbol, trade.volume / 1_000_000.0);
-            case REALTIME -> String.format("%s $%.2f %.0f", trade.symbol, trade.price, trade.volume);
+        return switch (trade.type()) {
+            case HEADER -> trade.symbol();
+            case GAINER, LOSER -> String.format("%s $%.2f (%.1f%%)", trade.symbol(), trade.price(), trade.volume());
+            case ACTIVE -> String.format("%s %.1fM", trade.symbol(), trade.volume() / 1_000_000.0);
+            case REALTIME -> String.format("%s $%.2f %.0f", trade.symbol(), trade.price(), trade.volume());
         };
     }
 
