@@ -1,27 +1,71 @@
-# Compiled class file
+# ======================
+# Java & Maven Build Files
+# ======================
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
-*.nar
 *.ear
+*.nar
 *.zip
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Maven Build Output
+/target/
+target/
+
+target/classes/
+!target/classes/**/.gitkeep
+target/maven-status/
+
+# ======================
+# IDE & Editor Settings
+# ======================
+.idea/
+*.iml
+.vscode/
+*.iws
+*.ipr
+
+# Eclipse specific
+.settings/
+.project
+.classpath
+
+# ======================
+# OS Generated Files
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Temporary/Backup Files
+# ======================
+*.log
+*.bak
+*.swp
+*.tmp
+*~
+*.orig
+*.lst
+
+# ======================
+# Environment & Secret Files
+# ======================
+.env
+
+# ======================
+# VM Crash Logs
+# ======================
 hs_err_pid*
 replay_pid*
 
-.env
-.DS_Store
+# ======================
+# BlueJ Files (if using)
+# ======================
+*.ctxt
+
+# ======================
+# Ignore Specific Files
+# ======================
+.LCKMainWindow.java~

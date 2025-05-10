@@ -4,15 +4,17 @@ import java.awt.*;
 import javax.swing.*;
 
 import com.minibloomberg.logic.LivePriceManager;
+import com.minibloomberg.logic.TradeTapeManager;
+import com.minibloomberg.logic.TradeTapeManager.TradeItem;
 import com.minibloomberg.ui.*;
 
 public class MainWindow extends JFrame {
     private final SearchController searchController;
 
     public MainWindow() {
-        setTitle("Mini Bloomberg Terminal");
+        setTitle("Katz Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1200, 900));
+        setMinimumSize(new Dimension(1300, 900));
         setLayout(new BorderLayout());
 
         // Create top search bar
@@ -37,12 +39,14 @@ public class MainWindow extends JFrame {
         centerContainer.setBackground(Color.BLACK);
         add(centerContainer, BorderLayout.CENTER);
 
-        // Right-side panel (empty)
-        JPanel rightPanel = new JPanel();
-        rightPanel.setBackground(new Color(0x252525));
-        rightPanel.setPreferredSize(new Dimension(250, 0));
-        add(rightPanel, BorderLayout.EAST);
+        NewsPanel newsPanel = new NewsPanel();
+        newsPanel.setPreferredSize(new Dimension(350, 0));
+        add(newsPanel, BorderLayout.EAST);
 
+
+        TradeTapePanel tapePanel = getTradeTapePanel();
+
+        add(tapePanel, BorderLayout.SOUTH); 
         // Initial placeholder
         TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
         centerContainer.showWithFade(ComponentFactory.getEmptyPlaceholder());
@@ -61,6 +65,25 @@ public class MainWindow extends JFrame {
 
         getContentPane().setBackground(new Color(0x1e1e1e));
         setVisible(true);
+    }
+
+    private static TradeTapePanel getTradeTapePanel() {
+        TradeTapeManager manager = new TradeTapeManager();
+        TradeTapePanel tapePanel = new TradeTapePanel(manager);
+        manager.setTradeListener(new TradeTapeManager.TradeListener() {
+            @Override
+            public void onTrade(TradeItem trade) {
+                tapePanel.displayTrade(trade);
+            }
+
+            @Override
+            public void onMarketModeChanged(boolean isAfterHours) {
+                tapePanel.setAfterHoursMode(isAfterHours);
+            }
+        });
+        manager.connect();
+        tapePanel.setAfterHoursMode(!manager.isMarketOpen());
+        return tapePanel;
     }
 
     private void searchTicker(String ticker) {
