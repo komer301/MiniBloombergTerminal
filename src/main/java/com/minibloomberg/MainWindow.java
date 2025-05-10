@@ -1,51 +1,44 @@
 package com.minibloomberg;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import java.awt.*;
+import javax.swing.*;
 
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.TradeTapeManager;
 import com.minibloomberg.logic.TradeTapeManager.TradeItem;
-import com.minibloomberg.ui.NewsPanel;
-import com.minibloomberg.ui.TradeTapePanel;
-import com.minibloomberg.ui.WatchlistPanel;
+import com.minibloomberg.ui.*;
 
 
 public class MainWindow extends JFrame {
+    private final SearchController searchController;
 
     public MainWindow() {
         setTitle("Katz Terminal");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800);
+        setMinimumSize(new Dimension(1200, 900));
         setLayout(new BorderLayout());
 
-        JPanel topPanel = new JPanel();
-        topPanel.setBackground(new Color(0x252525)); 
-        topPanel.setPreferredSize(new Dimension(0, 60));
+        // Create top search bar
+        JPanel topPanel = ComponentFactory.createTopPanel();
+        JTextField searchField = ComponentFactory.getSearchField();
+        JButton searchButton = ComponentFactory.getSearchButton();
+
+        topPanel.add(searchField);
+        topPanel.add(searchButton);
         add(topPanel, BorderLayout.NORTH);
 
-        WatchlistPanel watchlistPanel = new WatchlistPanel(ticker -> {
-            System.out.println("Clicked: " + ticker);
-        });
-        watchlistPanel.setBackground(new Color(0x252525)); 
+        // Create watchlist + live manager
+        WatchlistPanel watchlistPanel = new WatchlistPanel(this::searchTicker);
+        LivePriceManager livePriceManager = new LivePriceManager(watchlistPanel);
+        livePriceManager.connect();
+        watchlistPanel.setBackground(new Color(0x252525));
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
 
-        LivePriceManager livePriceManager = new LivePriceManager(watchlistPanel);
-        String[] tickers = {"AAPL", "TSLA", "GOOGL", "MSFT", "NVDA"};
-        for (String symbol : tickers) {
-            livePriceManager.addTicker(symbol);
-        }
-        livePriceManager.connect(); 
-
-        JPanel centerPanel = new JPanel();
-        centerPanel.setBackground(new Color(0x121212));
-        add(centerPanel, BorderLayout.CENTER);
+        // Center panel setup
+        FadeTransitionPanel centerContainer = new FadeTransitionPanel();
+        centerContainer.setBackground(Color.BLACK);
+        add(centerContainer, BorderLayout.CENTER);
 
         NewsPanel newsPanel = new NewsPanel();
         newsPanel.setPreferredSize(new Dimension(350, 0));
@@ -69,14 +62,31 @@ public class MainWindow extends JFrame {
         tapePanel.setAfterHoursMode(!manager.isMarketOpen());
 
         add(tapePanel, BorderLayout.SOUTH); 
+        // Initial placeholder
+        TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
+        centerContainer.showWithFade(ComponentFactory.getEmptyPlaceholder());
 
+        // Create controller
+        searchController = new SearchController(this, centerContainer, tickerDetailPanelHolder, livePriceManager);
 
-        getContentPane().setBackground(new Color(0x1e1e1e)); 
+        // Search actions
+        searchButton.addActionListener(e -> {
+            String query = searchField.getText();
+            searchTicker(query);
+            searchField.setText("");
+        });
 
+        searchField.addActionListener(e -> searchButton.doClick());
+
+        getContentPane().setBackground(new Color(0x1e1e1e));
         setVisible(true);
     }
 
+    private void searchTicker(String ticker) {
+        searchController.search(ticker);
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new MainWindow());
+        SwingUtilities.invokeLater(MainWindow::new);
     }
 }
