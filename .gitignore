@@ -1,56 +1,71 @@
-# Java class files
+# ======================
+# Java & Maven Build Files
+# ======================
 *.class
-
-# Log files
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package files
 *.jar
 *.war
-*.nar
 *.ear
+*.nar
 *.zip
 *.tar.gz
 *.rar
 
-# VM crash logs
-hs_err_pid*
-replay_pid*
-
-# Environment files
-.env
-
-# Maven build output
+# Maven Build Output
 /target/
+target/
 
-# IntelliJ / VS Code / Eclipse files
+target/classes/
+!target/classes/**/.gitkeep
+target/maven-status/
+
+# ======================
+# IDE & Editor Settings
+# ======================
 .idea/
 *.iml
 .vscode/
 *.iws
 *.ipr
+
+# Eclipse specific
+.settings/
+.project
+.classpath
+
+# ======================
+# OS Generated Files
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# Temporary/Backup Files
+# ======================
+*.log
 *.bak
 *.swp
 *.tmp
 *~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Backup or autosave files
-*.lst
 *.orig
+*.lst
 
-# Ignore specific files
+# ======================
+# Environment & Secret Files
+# ======================
+.env
+
+# ======================
+# VM Crash Logs
+# ======================
+hs_err_pid*
+replay_pid*
+
+# ======================
+# BlueJ Files (if using)
+# ======================
+*.ctxt
+
+# ======================
+# Ignore Specific Files
+# ======================
 .LCKMainWindow.java~
-
-# Keep empty folders with .gitkeep but ignore the rest of target/classes
-target/classes/
-!target/classes/**/.gitkeep

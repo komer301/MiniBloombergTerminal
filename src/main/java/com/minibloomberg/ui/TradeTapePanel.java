@@ -45,7 +45,6 @@ public class TradeTapePanel extends JPanel {
 
     private void onTick() {
         int speed = 1;
-
         Iterator<JLabel> it = tradeLabels.iterator();
         while (it.hasNext()) {
             JLabel label = it.next();
@@ -57,7 +56,6 @@ public class TradeTapePanel extends JPanel {
                 it.remove();
             }
         }
-
         repaint();
     }
 
@@ -87,18 +85,12 @@ public class TradeTapePanel extends JPanel {
     }
 
     private String formatTradeText(TradeItem trade) {
-        switch (trade.type) {
-            case HEADER:
-                return trade.symbol;
-            case GAINER:
-                return String.format("%s $%.2f (%.1f%%)", trade.symbol, trade.price, trade.volume);
-            case LOSER:
-                return String.format("%s $%.2f (%.1f%%)", trade.symbol, trade.price, trade.volume);
-            case ACTIVE:
-                return String.format("%s %.1fM", trade.symbol, trade.volume / 1_000_000.0);
-            default:
-                return String.format("%s $%.2f %.0f", trade.symbol, trade.price, trade.volume);
-        }
+        return switch (trade.type) {
+            case HEADER -> trade.symbol;
+            case GAINER, LOSER -> String.format("%s $%.2f (%.1f%%)", trade.symbol, trade.price, trade.volume);
+            case ACTIVE -> String.format("%s %.1fM", trade.symbol, trade.volume / 1_000_000.0);
+            case REALTIME -> String.format("%s $%.2f %.0f", trade.symbol, trade.price, trade.volume);
+        };
     }
 
     private JLabel createTradeLabel(String text, Color color) {

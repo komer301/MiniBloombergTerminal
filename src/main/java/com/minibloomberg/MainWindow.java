@@ -10,6 +10,7 @@ import javax.swing.SwingUtilities;
 
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.TradeTapeManager;
+import com.minibloomberg.logic.TradeTapeManager.TradeItem;
 import com.minibloomberg.ui.NewsPanel;
 import com.minibloomberg.ui.TradeTapePanel;
 import com.minibloomberg.ui.WatchlistPanel;
@@ -53,7 +54,17 @@ public class MainWindow extends JFrame {
 
         TradeTapeManager manager = new TradeTapeManager();
         TradeTapePanel tapePanel = new TradeTapePanel(manager);
-        manager.setTradeListener(tapePanel::displayTrade);
+        manager.setTradeListener(new TradeTapeManager.TradeListener() {
+            @Override
+            public void onTrade(TradeItem trade) {
+                tapePanel.displayTrade(trade);
+            }
+
+            @Override
+            public void onMarketModeChanged(boolean isAfterHours) {
+                tapePanel.setAfterHoursMode(isAfterHours);
+            }
+        });
         manager.connect();
         tapePanel.setAfterHoursMode(!manager.isMarketOpen());
 

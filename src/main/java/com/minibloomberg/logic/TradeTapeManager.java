@@ -6,13 +6,8 @@ import java.net.URL;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.*;
+import java.util.concurrent.*;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -27,12 +22,16 @@ public class TradeTapeManager {
     private final Map<String, Double> previousCloseCache = new HashMap<>();
     private TradeListener listener;
 
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private boolean lastMarketStatus = isMarketOpen();
+
     public enum TradeType {
         REALTIME, GAINER, LOSER, ACTIVE, HEADER
     }
 
     public interface TradeListener {
         void onTrade(TradeItem trade);
+        void onMarketModeChanged(boolean isAfterHours);
     }
 
     public void setTradeListener(TradeListener listener) {
@@ -45,12 +44,35 @@ public class TradeTapeManager {
         } else {
             loadTopTickersFromAPI();
         }
+        startMarketStatusWatcher();
+    }
+
+    private void startMarketStatusWatcher() {
+        scheduler.scheduleAtFixedRate(() -> {
+            boolean currentStatus = isMarketOpen();
+            if (currentStatus != lastMarketStatus) {
+                lastMarketStatus = currentStatus;
+
+                if (currentStatus) {
+                    // Market just opened
+                    if (client == null || !client.isOpen()) {
+                        connectLiveWebSocket();
+                    }
+                    if (listener != null) listener.onMarketModeChanged(false);
+                } else {
+                    // Market just closed
+                    closeWebSocket();
+                    loadTopTickersFromAPI();
+                    if (listener != null) listener.onMarketModeChanged(true);
+                }
+            }
+        }, 0, 1, TimeUnit.MINUTES); 
     }
 
     public boolean isMarketOpen() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
         LocalTime currentTime = now.toLocalTime();
-        return currentTime.isAfter(LocalTime.of(9, 30)) && currentTime.isBefore(LocalTime.of(16, 0));
+        return currentTime.isAfter(LocalTime.of(9, 30)) && currentTime.isBefore(LocalTime.of(16, ));
     }
 
     private void connectLiveWebSocket() {
@@ -61,7 +83,6 @@ public class TradeTapeManager {
             client = new WebSocketClient(new URI("wss://ws.finnhub.io?token=" + apiKey)) {
                 @Override
                 public void onOpen(ServerHandshake handshake) {
-                    System.out.println("connected to tape socket");
                     subscribeToTopTickers();
                 }
 
@@ -86,7 +107,7 @@ public class TradeTapeManager {
                 }
 
                 @Override public void onClose(int code, String reason, boolean remote) {
-                    System.out.println("TradeTape WebSocket closed: " + reason);
+                    System.out.println("WebSocket closed: " + reason);
                 }
 
                 @Override public void onError(Exception ex) {
@@ -97,6 +118,12 @@ public class TradeTapeManager {
             client.connect();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void closeWebSocket() {
+        if (client != null && client.isOpen()) {
+            client.close();
         }
     }
 
@@ -122,44 +149,9 @@ public class TradeTapeManager {
                     while (true) {
                         long now = System.currentTimeMillis();
 
-                        listener.onTrade(new TradeItem("Top Gainers", 0, 0, now, TradeType.HEADER));
-                        for (int i = 0; i < gainers.length(); i++) {
-                            JSONObject obj = gainers.getJSONObject(i);
-                            listener.onTrade(new TradeItem(
-                                obj.getString("ticker"),
-                                obj.getDouble("price"),
-                                Double.parseDouble(obj.getString("change_percentage").replace("%", "").trim()),
-                                now,
-                                TradeType.GAINER
-                            ));
-                            Thread.sleep(800);
-                        }
-
-                        listener.onTrade(new TradeItem("Top Losers", 0, 0, now, TradeType.HEADER));
-                        for (int i = 0; i < losers.length(); i++) {
-                            JSONObject obj = losers.getJSONObject(i);
-                            listener.onTrade(new TradeItem(
-                                obj.getString("ticker"),
-                                obj.getDouble("price"),
-                                Double.parseDouble(obj.getString("change_percentage").replace("%", "").trim()),
-                                now,
-                                TradeType.LOSER
-                            ));
-                            Thread.sleep(800);
-                        }
-
-                        listener.onTrade(new TradeItem("Most Active", 0, 0, now, TradeType.HEADER));
-                        for (int i = 0; i < active.length(); i++) {
-                            JSONObject obj = active.getJSONObject(i);
-                            listener.onTrade(new TradeItem(
-                                obj.getString("ticker"),
-                                0,
-                                obj.getDouble("volume"),
-                                now,
-                                TradeType.ACTIVE
-                            ));
-                            Thread.sleep(800);
-                        }
+                        simulateTrades("Top Gainers", gainers, TradeType.GAINER, now);
+                        simulateTrades("Top Losers", losers, TradeType.LOSER, now);
+                        simulateTrades("Most Active", active, TradeType.ACTIVE, now);
                     }
                 } catch (Exception e) {
                     System.err.println("Error simulating after-hours loop: " + e.getMessage());
@@ -168,6 +160,24 @@ public class TradeTapeManager {
 
         } catch (Exception e) {
             System.err.println("Failed to load fallback tickers: " + e.getMessage());
+        }
+    }
+
+    private void simulateTrades(String header, JSONArray data, TradeType type, long now) throws InterruptedException {
+        if (listener != null) {
+            listener.onTrade(new TradeItem(header, 0, 0, now, TradeType.HEADER));
+        }
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject obj = data.getJSONObject(i);
+            TradeItem item = new TradeItem(
+                obj.getString("ticker"),
+                obj.optDouble("price", 0),
+                Double.parseDouble(obj.getString("change_percentage").replace("%", "").trim()),
+                now,
+                type
+            );
+            if (listener != null) listener.onTrade(item);
+            Thread.sleep(800);
         }
     }
 
