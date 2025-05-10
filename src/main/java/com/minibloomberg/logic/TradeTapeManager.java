@@ -80,8 +80,14 @@ public class TradeTapeManager {
     public boolean isMarketOpen() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
         LocalTime currentTime = now.toLocalTime();
-        return currentTime.isAfter(LocalTime.of(9, 30)) && currentTime.isBefore(LocalTime.of(16, 0));
+        int dayOfWeek = now.getDayOfWeek().getValue(); // 1 = Monday, 7 = Sunday
+    
+        boolean isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+        boolean isTradingHours = currentTime.isAfter(LocalTime.of(9, 30)) && currentTime.isBefore(LocalTime.of(16, 0));
+    
+        return isWeekday && isTradingHours;
     }
+    
 
     private void connectLiveWebSocket() {
         Dotenv dotenv = Dotenv.load();
