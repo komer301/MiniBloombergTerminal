@@ -1,11 +1,11 @@
 package com.minibloomberg.ui;
 
-import java.awt.*;
+import java.awt.Color;
 
 public enum ToastType {
-    INFO(new Color(30, 30, 30), Color.YELLOW),
-    WARNING(new Color(50, 30, 0), Color.ORANGE),
-    ERROR(new Color(30, 0, 0), Color.RED);
+    INFO(ColorPalette.EERIE_BLACK, ColorPalette.ICTERINE),
+    WARNING(ColorPalette.JET, ColorPalette.ORANGE_PEEL),
+    ERROR(ColorPalette.JET, ColorPalette.RED);
 
     public final Color background;
     public final Color foreground;

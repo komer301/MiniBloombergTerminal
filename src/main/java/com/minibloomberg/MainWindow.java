@@ -1,12 +1,25 @@
 package com.minibloomberg;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import com.minibloomberg.logic.LivePriceManager;
 import com.minibloomberg.logic.TradeTapeManager;
 import com.minibloomberg.logic.TradeTapeManager.TradeItem;
-import com.minibloomberg.ui.*;
+import com.minibloomberg.ui.ComponentFactory;
+import com.minibloomberg.ui.FadeTransitionPanel;
+import com.minibloomberg.ui.NewsPanel;
+import com.minibloomberg.ui.SearchController;
+import com.minibloomberg.ui.TickerDetailPanel;
+import com.minibloomberg.ui.TradeTapePanel;
+import com.minibloomberg.ui.WatchlistPanel;
 
 public class MainWindow extends JFrame {
     private final SearchController searchController;
@@ -30,13 +43,13 @@ public class MainWindow extends JFrame {
         WatchlistPanel watchlistPanel = new WatchlistPanel(this::searchTicker);
         LivePriceManager livePriceManager = new LivePriceManager(watchlistPanel);
         livePriceManager.connect();
-        watchlistPanel.setBackground(new Color(0x252525));
+        watchlistPanel.setBackground(new Color(26, 26, 26));
         watchlistPanel.setPreferredSize(new Dimension(225, 0));
         add(watchlistPanel, BorderLayout.WEST);
 
         // Center panel setup
         FadeTransitionPanel centerContainer = new FadeTransitionPanel();
-        centerContainer.setBackground(Color.BLACK);
+        centerContainer.setBackground(new Color(26, 26, 26));
         add(centerContainer, BorderLayout.CENTER);
 
         NewsPanel newsPanel = new NewsPanel();
@@ -47,7 +60,6 @@ public class MainWindow extends JFrame {
         TradeTapePanel tapePanel = getTradeTapePanel();
 
         add(tapePanel, BorderLayout.SOUTH); 
-        // Initial placeholder
         TickerDetailPanel[] tickerDetailPanelHolder = new TickerDetailPanel[1];
         centerContainer.showWithFade(ComponentFactory.getEmptyPlaceholder());
 

@@ -29,11 +29,11 @@ public class TradeTapePanel extends JPanel {
         this.tradeManager = tradeManager;
 
         setLayout(null);
-        setBackground(new Color(0x1E1E1E));
+        setBackground(ColorPalette.EERIE_BLACK);  // Updated from raw color
         setPreferredSize(new Dimension(0, 50));
 
         afterHoursBanner.setFont(new Font("Monospaced", Font.BOLD, 13));
-        afterHoursBanner.setForeground(Color.ORANGE);
+        afterHoursBanner.setForeground(ColorPalette.ORANGE_PEEL);  // Updated from Color.ORANGE
         afterHoursBanner.setBounds(10, 0, 350, 20);
         add(afterHoursBanner);
         afterHoursBanner.setVisible(false);

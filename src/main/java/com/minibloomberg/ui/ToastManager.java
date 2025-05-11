@@ -1,7 +1,15 @@
 package com.minibloomberg.ui;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Point;
+
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JWindow;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 public class ToastManager {
     private static JWindow currentToast = null;
