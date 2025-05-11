@@ -55,19 +55,14 @@ public class ChartPanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int width = getWidth();
-        int height = getHeight();
-        int marginX = 70;
-        int topMargin = 35;
-        int bottomMargin = 70;
+        int width = getWidth(), height = getHeight();
+        int marginX = 70, topMargin = 35, bottomMargin = 70;
+        int usableHeight = height - topMargin - bottomMargin;
 
         List<Double> prices = data.closePrices();
-
         Font labelFont = new Font("Consolas", Font.BOLD, 12);
         g2.setFont(labelFont);
         FontMetrics fm = g2.getFontMetrics();
-
-        int usableHeight = height - topMargin - bottomMargin;
 
         double minPrice = prices.stream().min(Double::compareTo).orElse(0.0);
         double maxPrice = prices.stream().max(Double::compareTo).orElse(1.0);
@@ -79,13 +74,13 @@ public class ChartPanel extends JPanel {
             minPrice = center - 0.25;
             maxPrice = center + 0.25;
         } else if (priceRange < 1.0) {
-            double padding = priceRange * 2.5;
-            minPrice = Math.max(0, minPrice - padding * 0.4);
-            maxPrice += padding * 0.6;
+            double pad = priceRange * 2.5;
+            minPrice = Math.max(0, minPrice - pad * 0.4);
+            maxPrice += pad * 0.6;
         } else {
-            double padding = priceRange * 0.1;
-            minPrice = Math.max(0, minPrice - padding * 0.4);
-            maxPrice += padding * 0.6;
+            double pad = priceRange * 0.1;
+            minPrice = Math.max(0, minPrice - pad * 0.4);
+            maxPrice += pad * 0.6;
         }
 
         double adjustedRange = maxPrice - minPrice;
@@ -100,7 +95,14 @@ public class ChartPanel extends JPanel {
             adjustedRange = maxPrice - minPrice;
         }
 
-        // Draw Y-axis gridlines and labels
+        drawYAxis(g2, width, topMargin, marginX, usableHeight, minPrice, maxPrice, adjustedRange);
+        drawPriceLines(g2, prices, width, topMargin, marginX, usableHeight, maxPrice, adjustedRange);
+        drawXAxisLabels(g2, fm, width, height, marginX, data.timestamps());
+        drawCrosshair(g2, prices, width, height, marginX, topMargin, usableHeight, maxPrice, adjustedRange);
+    }
+
+    private void drawYAxis(Graphics2D g2, int width, int topMargin, int marginX, int usableHeight,
+                           double minPrice, double maxPrice, double adjustedRange) {
         double step = roundToNiceNumber(adjustedRange, usableHeight);
         g2.setColor(ColorPalette.SILVER);
 
@@ -113,7 +115,10 @@ public class ChartPanel extends JPanel {
             g2.drawLine(marginX, y, width - marginX, y);
             g2.setColor(ColorPalette.SILVER);
         }
+    }
 
+    private void drawPriceLines(Graphics2D g2, List<Double> prices, int width, int topMargin, int marginX,
+                                int usableHeight, double maxPrice, double adjustedRange) {
         // Draw price trend lines
         int n = prices.size();
         g2.setStroke(new BasicStroke(2));
@@ -123,18 +128,23 @@ public class ChartPanel extends JPanel {
             int x2 = marginX + i * (width - 2 * marginX) / (n - 1);
             int y1 = topMargin + (int) ((maxPrice - prices.get(i - 1)) / adjustedRange * usableHeight);
             int y2 = topMargin + (int) ((maxPrice - prices.get(i)) / adjustedRange * usableHeight);
-
             g2.setColor(prices.get(i) >= prices.get(i - 1) ? ColorPalette.GREEN : ColorPalette.RED);
             g2.drawLine(x1, y1, x2, y2);
         }
+    }
 
+    private void drawXAxisLabels(Graphics2D g2, FontMetrics fm, int width, int height, int marginX, List<Long> timestamps) {
+        g2.setFont(new Font("Consolas", Font.BOLD, 12));
+        g2.setColor(Color.YELLOW);
+        int yLabel = height - 45 + fm.getAscent();
+        int n = timestamps.size();
         // Draw X-axis labels
         int yLabel = height - 45 + fm.getAscent();
         g2.setColor(ColorPalette.ANTI_FLASH_WHITE);
 
         int totalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(
-                Instant.ofEpochSecond(data.timestamps().get(0)).atZone(ZoneId.systemDefault()).toLocalDate(),
-                Instant.ofEpochSecond(data.timestamps().get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate());
+                Instant.ofEpochSecond(timestamps.get(0)).atZone(ZoneId.systemDefault()).toLocalDate(),
+                Instant.ofEpochSecond(timestamps.get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate());
 
         LocalDate lastLabeled = null;
 
@@ -156,14 +166,13 @@ public class ChartPanel extends JPanel {
                         lastLabeled = date;
                     }
                 }
-            } else {
+            } else if (totalDays > 370) {
                 int yearGap = (totalDays > 3650) ? 5 : (totalDays > 1825) ? 2 : 1;
                 if (lastLabeled == null || date.getYear() >= lastLabeled.getYear() + yearGap) {
                     drawDateLabel(g2, fm, String.valueOf(date.getYear()), x, yLabel);
                     lastLabeled = date;
                 }
             }
-        }
 
         // Draw hover crosshair and labels
         if (hoverX != null) drawHoverCrosshair(g2, fm, width, height, marginX, topMargin, usableHeight, prices, n, adjustedRange, minPrice, maxPrice);
@@ -195,7 +204,7 @@ public class ChartPanel extends JPanel {
         Font hoverFont = new Font("Consolas", Font.PLAIN, 12);
         g2.setFont(hoverFont);
         FontMetrics hoverMetrics = g2.getFontMetrics();
-
+      
         int dateLabelWidth = hoverMetrics.stringWidth(dateLabel);
         int dateLabelHeight = hoverMetrics.getHeight();
         int dateBoxX = Math.max(marginX, x - dateLabelWidth / 2 - 5);
@@ -216,7 +225,6 @@ public class ChartPanel extends JPanel {
         double approxLabels = height / 30.0;
         double rawStep = num / approxLabels;
         double[] steps = {0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100};
-
         for (double step : steps) {
             if (rawStep <= step) return step;
         }

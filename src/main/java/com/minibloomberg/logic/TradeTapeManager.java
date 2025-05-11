@@ -6,16 +6,8 @@ import java.net.URL;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -24,6 +16,10 @@ import org.json.JSONObject;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
+/**
+ * Manages the trade tape functionality in both real-time (market hours) and simulated (after-hours) modes.
+ * Handles top tickers, WebSocket connection for live updates, and switching modes automatically.
+ */
 public class TradeTapeManager {
     private WebSocketClient client;
     private final BlockingQueue<TradeItem> tradeQueue = new LinkedBlockingQueue<>();
@@ -31,13 +27,18 @@ public class TradeTapeManager {
     private TradeListener listener;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final ScheduledExecutorService tradeSimulatorExecutor = Executors.newSingleThreadScheduledExecutor();
     private boolean lastMarketStatus = isMarketOpen();
 
+    /**
+     * Different trade item types for styling and simulation behavior.
+     */
     public enum TradeType {
         REALTIME, GAINER, LOSER, ACTIVE, HEADER
     }
 
+    /**
+     * Listener interface to notify trade and mode updates to the UI.
+     */
     public interface TradeListener {
         void onTrade(TradeItem trade);
         void onMarketModeChanged(boolean isAfterHours);
@@ -47,6 +48,10 @@ public class TradeTapeManager {
         this.listener = listener;
     }
 
+    /**
+     * Determines how to start the trade tape depending on market status.
+     * Initializes either WebSocket streaming or fallback simulation.
+     */
     public void connect() {
         if (isMarketOpen()) {
             connectLiveWebSocket();
@@ -56,6 +61,9 @@ public class TradeTapeManager {
         startMarketStatusWatcher();
     }
 
+    /**
+     * Rechecks market open status every minute and switches data source accordingly.
+     */
     private void startMarketStatusWatcher() {
         scheduler.scheduleAtFixedRate(() -> {
             boolean currentStatus = isMarketOpen();
@@ -63,33 +71,36 @@ public class TradeTapeManager {
                 lastMarketStatus = currentStatus;
 
                 if (currentStatus) {
-                    // Market just opened
                     if (client == null || !client.isOpen()) {
                         connectLiveWebSocket();
                     }
                     if (listener != null) listener.onMarketModeChanged(false);
                 } else {
-                    // Market just closed
                     closeWebSocket();
                     loadTopTickersFromAPI();
                     if (listener != null) listener.onMarketModeChanged(true);
                 }
             }
-        }, 0, 1, TimeUnit.MINUTES); 
+        }, 0, 1, TimeUnit.MINUTES);
     }
 
+    /**
+     * Determines if the market is currently open based on NYSE hours.
+     */
     public boolean isMarketOpen() {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
         LocalTime currentTime = now.toLocalTime();
         int dayOfWeek = now.getDayOfWeek().getValue(); // 1 = Monday, 7 = Sunday
-    
+
         boolean isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
         boolean isTradingHours = currentTime.isAfter(LocalTime.of(9, 30)) && currentTime.isBefore(LocalTime.of(16, 0));
-    
+
         return isWeekday && isTradingHours;
     }
-    
 
+    /**
+     * Connects to Finnhub WebSocket for real-time trades and subscribes to tickers.
+     */
     private void connectLiveWebSocket() {
         Dotenv dotenv = Dotenv.load();
         String apiKey = dotenv.get("WEBSOCKET_API_KEY");
@@ -110,11 +121,11 @@ public class TradeTapeManager {
                     for (int i = 0; i < dataArray.length(); i++) {
                         JSONObject trade = dataArray.getJSONObject(i);
                         TradeItem item = new TradeItem(
-                            trade.getString("s"),
-                            trade.getDouble("p"),
-                            trade.getDouble("v"),
-                            trade.getLong("t"),
-                            TradeType.REALTIME
+                                trade.getString("s"),
+                                trade.getDouble("p"),
+                                trade.getDouble("v"),
+                                trade.getLong("t"),
+                                TradeType.REALTIME
                         );
                         boolean added = tradeQueue.offer(item);
                         if (!added) {
@@ -130,22 +141,28 @@ public class TradeTapeManager {
                 }
 
                 @Override public void onError(Exception e) {
-                    System.err.println("[NewsFetcher] JSON parsing error: " + e.getMessage());
+                    System.err.println("[TradeTapeManager] WebSocket error: " + e.getMessage());
                 }
             };
 
             client.connect();
         } catch (Exception e) {
-            System.err.println("[NewsFetcher] Failed to fetch news:");
+            System.err.println("[TradeTapeManager] Failed to connect WebSocket: " + e.getMessage());
         }
     }
 
+    /**
+     * Gracefully closes WebSocket connection when market closes.
+     */
     private void closeWebSocket() {
         if (client != null && client.isOpen()) {
             client.close();
         }
     }
 
+    /**
+     * Subscribes to all tickers identified from API.
+     */
     private void subscribeToTopTickers() {
         try {
             for (String symbol : fetchTopTickersFromAPI()) {
@@ -156,6 +173,10 @@ public class TradeTapeManager {
         }
     }
 
+    /**
+     * Switches to simulated trade feed by polling Alpha Vantage.
+     * Runs in a loop on a background thread.
+     */
     private void loadTopTickersFromAPI() {
         try {
             JSONObject response = fetchTopTickersJSON();
@@ -163,23 +184,30 @@ public class TradeTapeManager {
             JSONArray losers = response.getJSONArray("top_losers");
             JSONArray active = response.getJSONArray("most_actively_traded");
 
-            tradeSimulatorExecutor.scheduleAtFixedRate(() -> {
+            new Thread(() -> {
                 try {
-                    long now = System.currentTimeMillis();
+                    while (true) {
+                        long now = System.currentTimeMillis();
 
-                    simulateTrades("Top Gainers", gainers, TradeType.GAINER, now);
-                    simulateTrades("Top Losers", losers, TradeType.LOSER, now);
-                    simulateTrades("Most Active", active, TradeType.ACTIVE, now);
+                        simulateTrades("Top Gainers", gainers, TradeType.GAINER, now);
+                        simulateTrades("Top Losers", losers, TradeType.LOSER, now);
+                        simulateTrades("Most Active", active, TradeType.ACTIVE, now);
+
+                        Thread.sleep(800);  // Delay between each cycle
+                    }
                 } catch (Exception e) {
-                    System.err.println("Error simulating after-hours trades: " + e.getMessage());
+                    System.err.println("Error simulating after-hours loop: " + e.getMessage());
                 }
-            }, 0, 800, TimeUnit.SECONDS);  // adjust frequency to desired pacing
+            }).start();
 
         } catch (Exception e) {
             System.err.println("Failed to load fallback tickers: " + e.getMessage());
         }
     }
 
+    /**
+     * Simulates trade items based on Alpha Vantage data.
+     */
     private void simulateTrades(String header, JSONArray data, TradeType type, long now) {
         if (listener != null) {
             listener.onTrade(new TradeItem(header, 0, 0, now, TradeType.HEADER));
@@ -198,7 +226,9 @@ public class TradeTapeManager {
         }
     }
 
-
+    /**
+     * Fetches JSON data for top gainers, losers, and active stocks from Alpha Vantage.
+     */
     private JSONObject fetchTopTickersJSON() throws Exception {
         Dotenv dotenv = Dotenv.load();
         String apiKey = dotenv.get("ALPHA_API_KEY");
@@ -212,6 +242,9 @@ public class TradeTapeManager {
         return new JSONObject(json.toString());
     }
 
+    /**
+     * Extracts top 7 tickers from each category (gainers, losers, active).
+     */
     private Set<String> fetchTopTickersFromAPI() throws Exception {
         JSONObject response = fetchTopTickersJSON();
         JSONArray gainers = response.getJSONArray("top_gainers");
@@ -229,12 +262,18 @@ public class TradeTapeManager {
         return uniqueTickers;
     }
 
+    /**
+     * Sends a subscription request to the WebSocket.
+     */
     public void subscribe(String symbol) {
         if (client != null && client.isOpen()) {
             client.send("{\"type\":\"subscribe\",\"symbol\":\"" + symbol + "\"}");
         }
     }
 
+    /**
+     * Returns a color-coded value based on the trade type and comparison to previous close.
+     */
     public Color getTradeColor(TradeItem item) {
         return switch (item.type) {
             case GAINER -> Color.GREEN;
@@ -250,6 +289,9 @@ public class TradeTapeManager {
         };
     }
 
+    /**
+     * Caches and returns the previous close price for a symbol.
+     */
     private double getPreviousClose(String symbol) {
         if (!previousCloseCache.containsKey(symbol)) {
             double close = fetchPreviousClose(symbol);
@@ -258,6 +300,9 @@ public class TradeTapeManager {
         return previousCloseCache.getOrDefault(symbol, -1.0);
     }
 
+    /**
+     * Fetches the previous close value from Alpha Vantage API.
+     */
     private double fetchPreviousClose(String symbol) {
         try {
             Dotenv dotenv = Dotenv.load();
@@ -280,6 +325,9 @@ public class TradeTapeManager {
         }
     }
 
+    /**
+     * Data structure representing a single trade item for the tape.
+     */
     public record TradeItem(String symbol, double price, double volume, long timestamp, TradeType type) {
     }
 }
