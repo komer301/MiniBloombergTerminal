@@ -72,7 +72,6 @@ public class TickerDetailPanel extends JPanel {
             return;
         }
 
-        // Color changeColor = snapshot.change() >= 0 ? TEXT_GAIN : TEXT_LOSS;
         double change = snapshot.change();
         String formattedChange = String.format("%s$%.2f", change < 0 ? "-" : "", Math.abs(change));
         
