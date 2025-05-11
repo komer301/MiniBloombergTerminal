@@ -1,21 +1,28 @@
 package com.minibloomberg.ui;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.AlphaComposite;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+
+import javax.swing.JPanel;
+import javax.swing.Timer;
 
 public class FadeTransitionPanel extends JPanel {
     private Component currentComponent;
-    private float alpha = 1f;
+    private float alpha = 1f; // Opacity for fade effect
     private Timer fadeTimer;
 
     public FadeTransitionPanel() {
         setLayout(new CardLayout());
+        setBackground(ColorPalette.RED); // Temporary background for visibility
     }
 
     public void showWithFade(Component newComponent) {
         if (newComponent == null) return;
 
-        // If there's no current, just add it directly
+        // First time display, no need to fade
         if (currentComponent == null) {
             currentComponent = newComponent;
             add(currentComponent, "main");
@@ -24,13 +31,13 @@ public class FadeTransitionPanel extends JPanel {
             return;
         }
 
-        // Remove current and add new
+        // Switch to new component and start fade effect
         remove(currentComponent);
         add(newComponent, "main");
         currentComponent = newComponent;
         alpha = 0f;
 
-        // Start fading in the new component
+        // Timer gradually increases opacity
         fadeTimer = new Timer(10, e -> {
             alpha += 0.05f;
             if (alpha >= 1f) {
@@ -39,6 +46,7 @@ public class FadeTransitionPanel extends JPanel {
             }
             repaint();
         });
+
         fadeTimer.start();
     }
 
@@ -46,7 +54,7 @@ public class FadeTransitionPanel extends JPanel {
     protected void paintChildren(Graphics g) {
         if (alpha < 1f && currentComponent != null) {
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha)); // Apply opacity
             super.paintChildren(g2);
             g2.dispose();
         } else {

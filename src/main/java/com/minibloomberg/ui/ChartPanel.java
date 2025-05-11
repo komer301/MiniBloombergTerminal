@@ -1,9 +1,12 @@
 package com.minibloomberg.ui;
 
-import com.minibloomberg.data.HistoricalData;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.Instant;
@@ -11,12 +14,16 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
+import javax.swing.JPanel;
+
+import com.minibloomberg.data.HistoricalData;
+
 public class ChartPanel extends JPanel {
     private HistoricalData data;
     private Integer hoverX = null;
 
     public ChartPanel() {
-        setBackground(Color.BLACK);
+        setBackground(ColorPalette.NIGHT);
 
         addMouseMotionListener(new MouseAdapter() {
             @Override
@@ -56,7 +63,6 @@ public class ChartPanel extends JPanel {
 
         List<Double> prices = data.closePrices();
 
-        // Font setup for labels
         Font labelFont = new Font("Consolas", Font.BOLD, 12);
         g2.setFont(labelFont);
         FontMetrics fm = g2.getFontMetrics();
@@ -67,6 +73,7 @@ public class ChartPanel extends JPanel {
         double maxPrice = prices.stream().max(Double::compareTo).orElse(1.0);
         double priceRange = maxPrice - minPrice;
 
+        // Adjust price range for better visualization
         if (priceRange < 0.01) {
             double center = (minPrice + maxPrice) / 2.0;
             minPrice = center - 0.25;
@@ -83,8 +90,8 @@ public class ChartPanel extends JPanel {
 
         double adjustedRange = maxPrice - minPrice;
 
-        // Ensure visual separation even for low-variation charts
-        int pixelRange = (int)((maxPrice - minPrice) / adjustedRange * usableHeight);
+        // Ensure minimum visual height for low-variation charts
+        int pixelRange = (int) ((maxPrice - minPrice) / adjustedRange * usableHeight);
         int minVisualPixels = 100;
         if (pixelRange < minVisualPixels) {
             double extra = (minVisualPixels - pixelRange) / (double) usableHeight * adjustedRange;
@@ -95,105 +102,110 @@ public class ChartPanel extends JPanel {
 
         // Draw Y-axis gridlines and labels
         double step = roundToNiceNumber(adjustedRange, usableHeight);
-        g2.setColor(Color.LIGHT_GRAY);
+        g2.setColor(ColorPalette.SILVER);
+
         for (double p = Math.ceil(minPrice / step) * step; p <= maxPrice; p += step) {
             int y = topMargin + (int) ((maxPrice - p) / adjustedRange * usableHeight);
-            int labelX = marginX / 4;  // Centered within left margin
+            int labelX = marginX / 4;
             g2.drawString(String.format("%.2f", p), labelX, y + 5);
 
             g2.setColor(new Color(200, 200, 200, 50));
             g2.drawLine(marginX, y, width - marginX, y);
-            g2.setColor(Color.LIGHT_GRAY);
+            g2.setColor(ColorPalette.SILVER);
         }
 
-        // Draw price lines
+        // Draw price trend lines
         int n = prices.size();
         g2.setStroke(new BasicStroke(2));
+
         for (int i = 1; i < n; i++) {
             int x1 = marginX + (i - 1) * (width - 2 * marginX) / (n - 1);
             int x2 = marginX + i * (width - 2 * marginX) / (n - 1);
             int y1 = topMargin + (int) ((maxPrice - prices.get(i - 1)) / adjustedRange * usableHeight);
             int y2 = topMargin + (int) ((maxPrice - prices.get(i)) / adjustedRange * usableHeight);
 
-            g2.setColor(prices.get(i) >= prices.get(i - 1) ? Color.GREEN : Color.RED);
+            g2.setColor(prices.get(i) >= prices.get(i - 1) ? ColorPalette.GREEN : ColorPalette.RED);
             g2.drawLine(x1, y1, x2, y2);
         }
 
-        // Draw X-axis labels (35 px up from bottom)
+        // Draw X-axis labels
         int yLabel = height - 45 + fm.getAscent();
-        g2.setFont(labelFont);
-        g2.setColor(Color.YELLOW);
+        g2.setColor(ColorPalette.ANTI_FLASH_WHITE);
 
         int totalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(
                 Instant.ofEpochSecond(data.timestamps().get(0)).atZone(ZoneId.systemDefault()).toLocalDate(),
                 Instant.ofEpochSecond(data.timestamps().get(n - 1)).atZone(ZoneId.systemDefault()).toLocalDate());
 
         LocalDate lastLabeled = null;
+
         for (int i = 0; i < n; i++) {
             int x = marginX + i * (width - 2 * marginX) / (n - 1);
             LocalDate date = Instant.ofEpochSecond(data.timestamps().get(i)).atZone(ZoneId.systemDefault()).toLocalDate();
 
             if (totalDays <= 10) {
                 if (!date.equals(lastLabeled)) {
-                    String label = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd"));
-                    int strW = fm.stringWidth(label);
-                    g2.drawString(label, x - strW / 2, yLabel);
+                    drawDateLabel(g2, fm, date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd")), x, yLabel);
                     lastLabeled = date;
                 }
             } else if (totalDays <= 370) {
                 if (lastLabeled == null || !sameMonthYear(date, lastLabeled)) {
-                    boolean isNearStart = date.getDayOfMonth() <= 5;
-                    boolean isNearEnd = date.getDayOfMonth() >= date.lengthOfMonth() - 5;
-                    if (!isNearStart && !isNearEnd) {
-                        String label = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM"));
-                        int strW = fm.stringWidth(label);
-                        g2.drawString(label, x - strW / 2, yLabel);
+                    boolean nearStart = date.getDayOfMonth() <= 5;
+                    boolean nearEnd = date.getDayOfMonth() >= date.lengthOfMonth() - 5;
+                    if (!nearStart && !nearEnd) {
+                        drawDateLabel(g2, fm, date.format(java.time.format.DateTimeFormatter.ofPattern("MMM")), x, yLabel);
                         lastLabeled = date;
                     }
                 }
             } else {
                 int yearGap = (totalDays > 3650) ? 5 : (totalDays > 1825) ? 2 : 1;
                 if (lastLabeled == null || date.getYear() >= lastLabeled.getYear() + yearGap) {
-                    String label = String.valueOf(date.getYear());
-                    int strW = fm.stringWidth(label);
-                    g2.drawString(label, x - strW / 2, yLabel);
+                    drawDateLabel(g2, fm, String.valueOf(date.getYear()), x, yLabel);
                     lastLabeled = date;
                 }
             }
         }
 
-        // Hover crosshair
-        if (hoverX != null) {
-            int usableWidth = width - 2 * marginX;
-            int nearestIdx = Math.min(n - 1, Math.max(0, (hoverX - marginX) * (n - 1) / usableWidth));
-            int x = marginX + nearestIdx * usableWidth / (n - 1);
-            int y = topMargin + (int) ((maxPrice - prices.get(nearestIdx)) / adjustedRange * usableHeight);
+        // Draw hover crosshair and labels
+        if (hoverX != null) drawHoverCrosshair(g2, fm, width, height, marginX, topMargin, usableHeight, prices, n, adjustedRange, minPrice, maxPrice);
+    }
 
-            g2.setColor(Color.GRAY);
-            g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
-            g2.drawLine(x, topMargin, x, topMargin + usableHeight);
-            g2.drawLine(marginX, y, width - marginX, y);
+    private void drawDateLabel(Graphics2D g2, FontMetrics fm, String label, int x, int y) {
+        int strW = fm.stringWidth(label);
+        g2.drawString(label, x - strW / 2, y);
+    }
 
-            String dateLabel = Instant.ofEpochSecond(data.timestamps().get(nearestIdx))
-                    .atZone(ZoneId.systemDefault()).toLocalDate()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"));
-            String priceLabel = String.format("$%.2f", prices.get(nearestIdx));
+    private void drawHoverCrosshair(Graphics2D g2, FontMetrics fm, int width, int height, int marginX, int topMargin,
+                                    int usableHeight, List<Double> prices, int n, double adjustedRange, 
+                                    double minPrice, double maxPrice) {
+        int usableWidth = width - 2 * marginX;
+        int nearestIdx = Math.min(n - 1, Math.max(0, (hoverX - marginX) * (n - 1) / usableWidth));
+        int x = marginX + nearestIdx * usableWidth / (n - 1);
+        int y = topMargin + (int) ((maxPrice - prices.get(nearestIdx)) / adjustedRange * usableHeight);
 
-            Font hoverFont = new Font("Consolas", Font.PLAIN, 12);
-            g2.setFont(hoverFont);
-            FontMetrics hoverMetrics = g2.getFontMetrics(hoverFont);
+        g2.setColor(ColorPalette.SILVER);
+        g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{5}, 0));
+        g2.drawLine(x, topMargin, x, topMargin + usableHeight);
+        g2.drawLine(marginX, y, width - marginX, y);
 
-            int dateLabelWidth = hoverMetrics.stringWidth(dateLabel);
-            int dateLabelHeight = hoverMetrics.getHeight();
-            int dateBoxX = Math.max(marginX, x - dateLabelWidth / 2 - 5);
-            int dateBoxY = height - 35 + 5;
+        String dateLabel = Instant.ofEpochSecond(data.timestamps().get(nearestIdx))
+                .atZone(ZoneId.systemDefault()).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+        String priceLabel = String.format("$%.2f", prices.get(nearestIdx));
 
-            g2.setColor(new Color(0, 0, 0, 200));
-            g2.fillRect(dateBoxX, dateBoxY, dateLabelWidth + 10, dateLabelHeight);
-            g2.setColor(Color.WHITE);
-            g2.drawString(dateLabel, dateBoxX + 5, dateBoxY + hoverMetrics.getAscent());
-            g2.drawString(priceLabel, width - marginX + 5, y);
-        }
+        Font hoverFont = new Font("Consolas", Font.PLAIN, 12);
+        g2.setFont(hoverFont);
+        FontMetrics hoverMetrics = g2.getFontMetrics();
+
+        int dateLabelWidth = hoverMetrics.stringWidth(dateLabel);
+        int dateLabelHeight = hoverMetrics.getHeight();
+        int dateBoxX = Math.max(marginX, x - dateLabelWidth / 2 - 5);
+        int dateBoxY = height - 30;
+
+        g2.setColor(new Color(0, 0, 0, 200));
+        g2.fillRect(dateBoxX, dateBoxY, dateLabelWidth + 10, dateLabelHeight);
+        g2.setColor(ColorPalette.ANTI_FLASH_WHITE);
+        g2.drawString(dateLabel, dateBoxX + 5, dateBoxY + hoverMetrics.getAscent());
+        g2.drawString(priceLabel, width - marginX + 5, y);
     }
 
     private boolean sameMonthYear(LocalDate d1, LocalDate d2) {
@@ -201,16 +213,13 @@ public class ChartPanel extends JPanel {
     }
 
     private double roundToNiceNumber(double num, int height) {
-        double approxLabels = height / 30.0; // number of desired Y labels
+        double approxLabels = height / 30.0;
         double rawStep = num / approxLabels;
-
-        // Choose from a clean list of reasonable step sizes
         double[] steps = {0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100};
 
         for (double step : steps) {
             if (rawStep <= step) return step;
         }
-
-        return 200; // fallback for very large ranges
+        return 200;
     }
 }
