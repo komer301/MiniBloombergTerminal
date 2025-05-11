@@ -92,7 +92,7 @@ public class ChartPanel extends JPanel {
         drawPriceLines(g2, prices, width, topMargin, marginX, usableHeight, maxPrice, adjustedRange);
         drawXAxisLabels(g2, fm, width, height, marginX, data.timestamps());
         if (hoverX != null)
-            drawHoverCrosshair(g2, fm, width, height, marginX, topMargin, usableHeight, prices, maxPrice, adjustedRange);
+            drawHoverCrosshair(g2, width, height, marginX, topMargin, usableHeight, prices, maxPrice, adjustedRange);
     }
 
     private void drawYAxis(Graphics2D g2, int width, int topMargin, int marginX, int usableHeight,
@@ -159,7 +159,7 @@ public class ChartPanel extends JPanel {
         }
     }
 
-    private void drawHoverCrosshair(Graphics2D g2, FontMetrics fm, int width, int height, int marginX, int topMargin,
+    private void drawHoverCrosshair(Graphics2D g2, int width, int height, int marginX, int topMargin,
                                     int usableHeight, List<Double> prices, double maxPrice, double adjustedRange) {
         int n = prices.size();
         int usableWidth = width - 2 * marginX;
