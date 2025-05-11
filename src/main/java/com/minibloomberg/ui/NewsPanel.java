@@ -1,7 +1,6 @@
 package com.minibloomberg.ui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -29,25 +28,18 @@ import javax.swing.border.EmptyBorder;
 import com.minibloomberg.data.NewsArticle;
 import com.minibloomberg.logic.NewsFetcher;
 
-/**
- * NewsPanel displays a vertically auto-scrolling list of the latest market news articles.
- * Scrolling pauses when the user hovers over the article panel or a news headline.
- */
 public class NewsPanel extends JPanel {
     private final JPanel newsListPanel;
     private final JScrollPane scrollPane;
-
-    // Auto-scroll state
     private final Timer autoScrollTimer;
-    private boolean isMouseOver = false;   // Tracks if mouse is hovering
-
+    private boolean isMouseOver = false;
 
     public NewsPanel() {
         setLayout(new BorderLayout());
-        setBackground(new Color(0x252525));
+        setBackground(ColorPalette.EERIE_BLACK);
 
         JLabel title = new JLabel("Market News");
-        title.setForeground(Color.WHITE);
+        title.setForeground(ColorPalette.ANTI_FLASH_WHITE);
         title.setFont(new Font("Segoe UI", Font.BOLD, 20));
         title.setBorder(new EmptyBorder(15, 15, 10, 0));
         title.setHorizontalAlignment(SwingConstants.CENTER);
@@ -55,16 +47,17 @@ public class NewsPanel extends JPanel {
 
         newsListPanel = new JPanel();
         newsListPanel.setLayout(new BoxLayout(newsListPanel, BoxLayout.Y_AXIS));
-        newsListPanel.setBackground(new Color(0x252525));
+        newsListPanel.setBackground(ColorPalette.EERIE_BLACK);
 
         scrollPane = new JScrollPane(newsListPanel);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getViewport().setBackground(new Color(0x252525));
+        scrollPane.getViewport().setBackground(ColorPalette.JET);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER); // Hide vertical bar
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         add(scrollPane, BorderLayout.CENTER);
 
+        // Pause scrolling when mouse hovers over the panel
         newsListPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -78,33 +71,28 @@ public class NewsPanel extends JPanel {
             }
         });
 
-        // Delay (ms) between scroll steps (smaller = faster)
-        int scrollSpeedMs = 50;
-        autoScrollTimer = new Timer(scrollSpeedMs, e -> autoScrollStep());
-        // refresh news every 10 minutes
-        int refreshIntervalMs = 600_000;
-        Timer refreshTimer = new Timer(refreshIntervalMs, e -> fetchNewsInBackground());
+        autoScrollTimer = new Timer(50, e -> autoScrollStep());
+
+        // Refresh news every 10 minutes
+        Timer refreshTimer = new Timer(600_000, e -> fetchNewsInBackground());
         refreshTimer.setRepeats(true);
         refreshTimer.start();
 
         fetchNewsInBackground();
     }
 
-    /**
-     * Renders the list of articles in the news panel and (re)starts scrolling.
-     */
     public void setArticles(List<NewsArticle> articles) {
         newsListPanel.removeAll();
 
         for (NewsArticle article : articles) {
             newsListPanel.add(createArticlePanel(article));
-            newsListPanel.add(Box.createVerticalStrut(16)); // Space between articles
+            newsListPanel.add(Box.createVerticalStrut(16)); // Add space between articles
         }
 
         newsListPanel.revalidate();
         newsListPanel.repaint();
 
-        // Reset scroll to top & (re)start auto-scroll
+        // Reset scroll to top and start auto-scrolling if not paused
         SwingUtilities.invokeLater(() -> {
             scrollPane.getVerticalScrollBar().setValue(0);
             if (!autoScrollTimer.isRunning() && !isMouseOver) {
@@ -116,17 +104,18 @@ public class NewsPanel extends JPanel {
     private JPanel createArticlePanel(NewsArticle article) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(0x2d2d2d));
-        panel.setBorder(new EmptyBorder(12, 15, 12, 15));
+        panel.setBackground(ColorPalette.JET);
+        panel.setBorder(new EmptyBorder(12, 15, 24, 15));
         panel.setMaximumSize(new Dimension(9999, 120));
 
-        // Headline (title) label - clickable, underlined, pauses scroll on hover
+        // Headline (clickable)
         String safeTitle = NewsFetcher.truncateSummary(article.title(), 70);
-        JLabel titleLabel = new JLabel("<html><div style='width:260px; color:#62b6f7; font-weight:bold; word-break:break-word;'>" +
+        JLabel titleLabel = new JLabel("<html><div style='width:260px; font-weight:bold; word-break:break-word;'>" +
                 "<u>" + safeTitle + "</u></div></html>");
-        titleLabel.setForeground(new Color(0x62b6f7));
+        titleLabel.setForeground(ColorPalette.ORANGE_PEEL);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
         titleLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
         titleLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -139,25 +128,27 @@ public class NewsPanel extends JPanel {
             @Override
             public void mouseEntered(MouseEvent e) {
                 isMouseOver = true;
+                titleLabel.setForeground(ColorPalette.ORANGE_WEB);
                 if (autoScrollTimer.isRunning()) autoScrollTimer.stop();
             }
             @Override
             public void mouseExited(MouseEvent e) {
                 isMouseOver = false;
+                titleLabel.setForeground(ColorPalette.ORANGE_PEEL);
                 if (!autoScrollTimer.isRunning()) autoScrollTimer.start();
             }
         });
 
-        // Meta info (source + date)
+        // Meta info (source and publish date)
         String published = formatDate(article.timePublished());
         JLabel metaLabel = new JLabel(article.source() + " • " + published);
-        metaLabel.setForeground(new Color(0xbbbbbb));
+        metaLabel.setForeground(ColorPalette.SILVER);
         metaLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        // Summary label (text wraps)
+        // Article summary
         JLabel summaryLabel = new JLabel("<html><div style='width:260px; color:#cccccc; word-break:break-word;'>" +
                 article.summary() + "</div></html>");
-        summaryLabel.setForeground(Color.LIGHT_GRAY);
+        summaryLabel.setForeground(ColorPalette.SILVER);
         summaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         summaryLabel.setBorder(new EmptyBorder(7, 0, 0, 0));
 
@@ -165,28 +156,22 @@ public class NewsPanel extends JPanel {
         panel.add(metaLabel);
         panel.add(summaryLabel);
         panel.setMaximumSize(new Dimension(350, 150));
+
         return panel;
     }
 
-    /**
-     * Converts UNIX timestamp (seconds) to readable format.
-     */
     private String formatDate(String unixTime) {
         if (unixTime == null || unixTime.isEmpty()) return "";
         try {
             long ts = Long.parseLong(unixTime) * 1000L;
             java.util.Date date = new java.util.Date(ts);
-            java.text.SimpleDateFormat display = new java.text.SimpleDateFormat("MMM d, h:mm a");
-            return display.format(date);
+            java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("MMM d, h:mm a");
+            return formatter.format(date);
         } catch (Exception e) {
             return unixTime;
         }
     }
-    
 
-    /**
-     * Asynchronously fetches latest news and updates panel.
-     */
     private void fetchNewsInBackground() {
         new SwingWorker<List<NewsArticle>, Void>() {
             @Override
@@ -206,19 +191,15 @@ public class NewsPanel extends JPanel {
         }.execute();
     }
 
-    /**
-     * Scrolls the news list panel downward, loops back to top at end.
-     */
     private void autoScrollStep() {
-        JScrollBar vbar = scrollPane.getVerticalScrollBar();
-        int max = vbar.getMaximum() - vbar.getVisibleAmount();
-        int curr = vbar.getValue();
+        JScrollBar vBar = scrollPane.getVerticalScrollBar();
+        int max = vBar.getMaximum() - vBar.getVisibleAmount();
+        int curr = vBar.getValue();
+
         if (curr >= max) {
-            vbar.setValue(0); // Loop to top
+            vBar.setValue(0); // Restart scroll from top
         } else {
-            // Pixels to scroll per step (smaller = smoother)
-            int scrollStepPx = 1;
-            vbar.setValue(curr + scrollStepPx);
+            vBar.setValue(curr + 1);
         }
     }
 }
